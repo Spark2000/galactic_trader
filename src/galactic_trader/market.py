@@ -20,7 +20,7 @@ class Market:
     def __post_init__(self) -> None:
         """Validates the initial market values."""
         if self.volatility < 0:
-            raise ValueError("Volatility must be positive.")
+            raise ValueError("Volatility must not be negative.")
         if self.current_price < 1:
             raise ValueError("Current price must be greater or equal to one.")
 
@@ -32,5 +32,16 @@ class Market:
             -1 for Sell (supply up -> price down).
         """
         change = direction * self.volatility
-        new_price = self.current_price + change
+        self.set_price(self.current_price + change)
+
+    def adjust_volatility(self, change: float) -> None:
+        """Adds change value to the current volatility."""
+        self.set_volatility(self.volatility + change)
+
+    def set_price(self, new_price: float) -> None:
+        """Sets current_price to a new value or 1.0 if 1.0 > new value."""
         self.current_price = max(1.0, round(new_price, 2))
+
+    def set_volatility(self, new_volatility: float) -> None:
+        """Sets volatility to a new value or 0 if new value is negative."""
+        self.volatility = max(0.0, round(new_volatility, 2))
