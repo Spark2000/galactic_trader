@@ -10,10 +10,12 @@ class TerminalUI:
         """Parses 'b 5' into ('b', 5). Handles errors internally."""
         parts = raw_input.split()
         if not parts:
-            raise ValueError("Empty command")
+            raise ValueError("Input must contain a command.")
 
         command = parts[0]
         amount = int(parts[1]) if len(parts) > 1 else 1
+        if amount <= 0:
+            raise ValueError("Amount must be greater than zero.")
         return command, amount
 
     def render(self):
@@ -60,8 +62,8 @@ class TerminalUI:
                 # Advance the game world
                 self.engine.tick()
 
-            except ValueError:
-                print("\n[!] Invalid input format. Use 'b 5' or 's 1'.\n")
+            except ValueError as e:
+                print(f"\n[!] Invalid input format: {e}\nExample: 'b 5' or 's 1'.\n")
             except GameException as e:
                 # Catching the logic errors from the Engine
                 print(f"\n[!] TRANSACTION FAILED: {e}\n")
