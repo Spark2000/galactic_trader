@@ -2,7 +2,7 @@ from itertools import cycle
 
 from galactic_trader.inventory import Inventory
 from galactic_trader.market import Market
-from galactic_trader.products import ProductType
+from galactic_trader.products import Product
 
 
 class EconomyEngine:
@@ -10,7 +10,7 @@ class EconomyEngine:
         # 1. Initialize State
         self.player = Inventory(money=100.0)
         self.food_market = Market(
-            product=ProductType.FOOD, current_price=10.0, volatility=0.5
+            product=Product.FOOD, current_price=10.0, volatility=0.5
         )
         self.history: list[tuple] = []
         self.market_trend = cycle([0.2, 0.2, -0.1, -0.3])

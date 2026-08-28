@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from galactic_trader.products import ProductType
+from galactic_trader.products import Product
 
 
 @dataclass
@@ -8,12 +8,12 @@ class Market:
     """
     Represents a market for one product.
 
-    product : associated ProductType
+    product : associated Product
     current_price : current price to buy 1 of the product
     volatility : sets the price fluctations on buying/ selling of the product
     """
 
-    product: ProductType
+    product: Product
     current_price: float
     volatility: float
 

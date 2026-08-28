@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 
 from galactic_trader.exceptions import *
-from galactic_trader.products import ProductType
+from galactic_trader.products import Product
 
 
 @dataclass
@@ -9,9 +9,9 @@ class Inventory:
     """Each player has one inventory"""
 
     money: float
-    stock: dict[ProductType, int] = field(default_factory=dict)
+    stock: dict[Product, int] = field(default_factory=dict)
 
-    def execute_trade(self, product: ProductType, quantity: int, unit_price: float):
+    def execute_trade(self, product: Product, quantity: int, unit_price: float):
         """
         Unified method for Buying AND Selling.
         - Positive quantity = BUY (Money down, Stock up)

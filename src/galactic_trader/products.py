@@ -1,9 +1,9 @@
-from enum import Enum, auto
+from enum import Enum
 
 
-class ProductType(Enum):
-    FOOD = auto()
-    # Später auch andere Produkte
+class Product(Enum):
+    FOOD = "food"
+    # TODO more product e.g. ore, metal, ...
 
-    def __str__(self):
-        return self.name.title()
+    def __str__(self) -> str:
+        return self.value.title()
