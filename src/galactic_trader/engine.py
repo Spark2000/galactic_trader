@@ -41,6 +41,7 @@ class EconomyEngine:
         assert quantity > 0
 
         market = self.markets_by_product[product]
+        transaction_price = market.current_price
         # Buying -> positive quantity, Selling -> negative quantity
         signed_qty = quantity if is_buy else -quantity
 
@@ -56,7 +57,7 @@ class EconomyEngine:
         direction = 1 if is_buy else -1
         market.adjust_price(direction)
 
-        return action_name, market.current_price
+        return action_name, transaction_price
 
     def tick(self):
         """Advances the simulation by one step (Background market forces)."""
