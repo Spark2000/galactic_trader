@@ -38,8 +38,8 @@ class Inventory:
         self.stock[product] = current_qty + quantity
 
     def __str__(self) -> str:
-        """Creates a pretty, human-readable string for the player."""
-        money_display = f"{self.money:.2f} €"
+        """Return a formatted, human-readable string of the player inventory."""
+        money_display = f"{self.money:.2f} Credits"
         items_list = [
             f"{product.name.title()}: {amount}"
             for product, amount in self.stock.items()

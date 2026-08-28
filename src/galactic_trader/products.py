@@ -3,7 +3,10 @@ from enum import Enum
 
 class Product(Enum):
     FOOD = "food"
-    # TODO more product e.g. ore, metal, ...
+    FURNITURE = "furniture"
+    NAILS = "nails"
+    WOOD = "wood"
+    # TODO more products e.g. ore, metal, ...
 
     def __str__(self) -> str:
         """
