@@ -1,5 +1,6 @@
 from galactic_trader.engine import EconomyEngine
 from galactic_trader.exceptions import GameException
+from galactic_trader.production import CRAFTING_RECIPES
 from galactic_trader.products import Product
 
 
@@ -50,11 +51,9 @@ class TerminalUI:
     def render(self) -> None:
         """Visualizes the Engine state."""
         print("-" * 40)
-        print("MARKET:")
-
-        for m in self.engine.markets.values():
-            print(f"- {m.product} @ {m.current_price:.2f} Credits")
-
+        self.render_products()
+        print("-" * 40)
+        self.render_crafting_recipes()
         print("-" * 40)
         print(self.engine.player)  # Uses Inventory.__str__
         print("-" * 40)
@@ -71,6 +70,25 @@ class TerminalUI:
             "- next round: 'n'"
             "- quit: 'q'"
         )
+
+    def render_products(self) -> None:
+        """Displays all available products."""
+        print("MARKET:")
+
+        for m in self.engine.markets.values():
+            print(f"- {m.product} @ {m.current_price:.2f} Credits")
+
+    def render_crafting_recipes(self) -> None:
+        """Displays all available production recipes."""
+        print("PRODUCTION RECIPES:")
+
+        for product, recipe in CRAFTING_RECIPES.items():
+            materials_display = ", ".join(
+                f"{amount} {material}" for material, amount in recipe.materials.items()
+            )
+            print(
+                f"- {product}: {recipe.cost:.2f} Credits | Materials: {materials_display}"
+            )
 
     def run(self):
         """Game loop for terminal ui."""
