@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 
-from galactic_trader.exceptions import *
+from galactic_trader.exceptions import NotEnoughMoneyException, NotEnoughStockException
 from galactic_trader.products import Product
 
 
@@ -11,7 +11,7 @@ class Inventory:
     money: float
     stock: dict[Product, int] = field(default_factory=dict)
 
-    def execute_trade(self, product: Product, quantity: int, unit_price: float):
+    def execute_trade(self, product: Product, quantity: int, unit_price: float) -> None:
         """
         Unified method for Buying AND Selling.
         - Positive quantity = BUY (Money down, Stock up)
@@ -30,7 +30,7 @@ class Inventory:
             # check current stock. absolute value needed because quantity is negative
             current_stock = self.stock.get(product, 0)
             if current_stock < abs(quantity):
-                raise NotEnoughStockException(f"Not enough {product.name} to sell.")
+                raise NotEnoughStockException(f"Not enough {product} to sell.")
 
         # 2. Execution Logic (Only runs if Validation passes)
         self.money -= cost
@@ -41,7 +41,7 @@ class Inventory:
         """Return a formatted, human-readable string of the player inventory."""
         money_display = f"{self.money:.2f} Credits"
         items_list = [
-            f"{product.name.title()}: {amount}"
+            f"{product}: {amount}"
             for product, amount in self.stock.items()
             if amount > 0
         ]

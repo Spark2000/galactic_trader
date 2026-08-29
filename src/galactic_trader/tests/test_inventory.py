@@ -1,7 +1,8 @@
 import pytest
 
-from galactic_trader.exceptions import *
-from galactic_trader.inventory import *
+from galactic_trader.exceptions import NotEnoughMoneyException, NotEnoughStockException
+from galactic_trader.inventory import Inventory
+from galactic_trader.products import Product
 
 
 def test_buying_reduces_money_and_increases_stock() -> None:

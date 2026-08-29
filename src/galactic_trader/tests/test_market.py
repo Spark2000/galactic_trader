@@ -1,6 +1,17 @@
 import pytest
 
-from galactic_trader.market import *
+from galactic_trader.market import Market
+from galactic_trader.products import Product
+
+
+def test_initial_current_price_value_too_low() -> None:
+    with pytest.raises(ValueError):
+        Market(product=Product.FOOD, current_price=0.5, volatility=0.5)
+
+
+def test_initial_volatility_value_too_low() -> None:
+    with pytest.raises(ValueError):
+        Market(product=Product.FOOD, current_price=10.0, volatility=-1)
 
 
 def test_set_price() -> None:
@@ -10,26 +21,30 @@ def test_set_price() -> None:
 
     assert market.current_price == 3.0
 
+
 def test_set_price_too_low() -> None:
     market = Market(product=Product.FOOD, current_price=10.0, volatility=0.5)
-    
+
     market.set_price(0.3)
 
     assert market.current_price == 1.0
 
+
 def test_set_volatility() -> None:
     market = Market(product=Product.FOOD, current_price=10.0, volatility=0.5)
-    
+
     market.set_volatility(0.8)
 
     assert market.volatility == 0.8
 
-def test_set_colatitlity() -> None:
+
+def test_set_volatitlity_too_low() -> None:
     market = Market(product=Product.FOOD, current_price=10.0, volatility=0.5)
-        
+
     market.set_volatility(-1)
 
     assert market.volatility == 0.0
+
 
 def test_adjust_price() -> None:
     market = Market(product=Product.FOOD, current_price=10.0, volatility=0.5)
@@ -45,13 +60,3 @@ def test_adjust_volatility() -> None:
     market.adjust_volatility(-1)
 
     assert market.volatility == 0.0
-
-
-def test_initial_volatility_value_too_low() -> None:
-    with pytest.raises(ValueError):
-        Market(product=Product.FOOD, current_price=10.0, volatility=-1)
-
-
-def test_initial_current_price_value_too_low() -> None:
-    with pytest.raises(ValueError):
-        Market(product=Product.FOOD, current_price=0.5, volatility=0.5)
