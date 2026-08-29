@@ -1,7 +1,7 @@
 [project]
 name = "galactic-trader"
 version = "0.1.0"
-description = "Add your description here"
+description = "A turn-based space trading game"
 readme = "README.md"
 authors = [
     { name = "Spark2000", email = "paulalex.wetzel@gmail.com" }
@@ -10,7 +10,7 @@ requires-python = ">=3.14"
 dependencies = []
 
 [project.scripts]
-galactic-trader = "galactic_trader:main"
+galactic-trader = "galactic_trader.__main__:main"
 
 [build-system]
 requires = ["uv_build>=0.11.13,<0.12.0"]
