@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 
 from galactic_trader.exceptions import NotEnoughMoneyException, NotEnoughStockException
+from galactic_trader.production import ProductionRecipe
 from galactic_trader.products import Product
 
 
@@ -17,13 +18,16 @@ class Inventory:
         - Positive quantity = BUY (Money down, Stock up)
         - Negative quantity = SELL (Money up, Stock down)
         """
+
+        assert quantity != 0
+
         cost = quantity * unit_price
 
         # 1. Validation Logic
         if quantity > 0:  # BUYING
             if self.money < cost:
                 raise NotEnoughMoneyException(
-                    f"Need {cost:.2f}€, have {self.money:.2f}€"
+                    f"Need {cost:.2f} Credits, have {self.money:.2f} Credits"
                 )
 
         elif quantity < 0:  # SELLING
@@ -36,6 +40,55 @@ class Inventory:
         self.money -= cost
         current_qty = self.stock.get(product, 0)
         self.stock[product] = current_qty + quantity
+
+    def execute_production(
+        self, product: Product, quantity: int, recipe: ProductionRecipe
+    ) -> None:
+        """
+        Executes the production of given product.
+        Removes the required materials and production cost and adds the produced products at given quantity
+        """
+
+        assert quantity > 0
+
+        total_cost = recipe.calculate_total_cost(quantity)
+        required_materials = recipe.calculate_required_materials(quantity)
+
+        if self.money < total_cost:
+            raise NotEnoughMoneyException(
+                f"Need {total_cost:.2f} Credits, have {self.money:.2f} Credits"
+            )
+
+        missing_materials = {
+            material: required_amount - self.stock.get(material, 0)
+            for material, required_amount in required_materials.items()
+            if self.stock.get(material, 0) < required_amount
+        }
+
+        if missing_materials:
+            missing_display = ", ".join(
+                f"{amount} {material}" for material, amount in missing_materials.items()
+            )
+            raise NotEnoughStockException(f"Missing materials: {missing_display}.")
+
+        # only change inventory values after checks have passed
+        self.money -= total_cost
+
+        for material, required_amount in required_materials.items():
+            self.stock[material] -= required_amount
+
+        self.adjust_stock(product, quantity)
+
+        return total_cost
+
+    def adjust_stock(self, product: Product, change: int) -> None:
+        """Adjusts (increases/ decreses) amount by given value."""
+        current_amount = self.stock.get(product, 0)
+
+        if change < 0 and current_amount < (change * -1):
+            raise ValueError("Stock value cannot be negative, change value ist too low")
+
+        self.stock[product] = current_amount + change
 
     def __str__(self) -> str:
         """Return a formatted, human-readable string of the player inventory."""

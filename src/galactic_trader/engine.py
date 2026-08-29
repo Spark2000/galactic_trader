@@ -2,6 +2,7 @@ from itertools import cycle
 
 from galactic_trader.inventory import Inventory
 from galactic_trader.market import Market
+from galactic_trader.production import PRODUCTION_RECIPES
 from galactic_trader.products import Product
 
 
@@ -52,6 +53,27 @@ class EconomyEngine:
         self.pending_price_directions[product] += direction * quantity
 
         return action_name, transaction_price
+
+    def produce_product(self, product, quantity) -> float:
+        assert quantity > 0
+
+        recipe = PRODUCTION_RECIPES.get(product)
+
+        if recipe is None:
+            raise ValueError(f"{product} cannot be produced.")
+
+        total_cost = self.player.execute_production(
+            product=product,
+            quantity=quantity,
+            recipe=recipe,
+        )
+
+        action_name = "PRODUCE"
+        self.history.append(
+            (action_name, str(product), quantity, total_cost)
+        )
+
+        return action_name, total_cost
 
     def tick(self) -> None:
         """Advances the simulation by one round and applies all pending price changes."""

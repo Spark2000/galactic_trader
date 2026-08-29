@@ -6,7 +6,7 @@ from galactic_trader.products import Product
 
 
 @dataclass(frozen=True)
-class CraftingRecipe:
+class ProductionRecipe:
     """
     Requirements for producing a specific product
 
@@ -28,18 +28,33 @@ class CraftingRecipe:
         if self.cost <= 0:
             raise ValueError("Production cost must be greater than zero.")
 
+    def calculate_required_materials(self, quantity: int) -> dict[Product, int]:
+        """Calculates the materials required for a given production quantity."""
+        assert quantity > 0
+
+        return {
+            material: amount_per_unit * quantity
+            for material, amount_per_unit in self.materials.items()
+        }
+
+    def calculate_total_cost(self, quantity: int) -> float:
+        """Calculates the total costs for a given production quantity."""
+        assert quantity > 0
+
+        return self.cost * quantity
+
 
 # Mapping funktioniert aehnlich zu dict, verhindert aber das aendern der Werte (nur Lesezugriff!)
-CRAFTING_RECIPES: Mapping[Product, CraftingRecipe] = MappingProxyType(
+PRODUCTION_RECIPES: Mapping[Product, ProductionRecipe] = MappingProxyType(
     {
-        Product.FURNITURE: CraftingRecipe(
+        Product.FURNITURE: ProductionRecipe(
             {
                 Product.WOOD: 2,
                 Product.NAILS: 4,
             },
             5.0,
         ),
-        Product.NAILS: CraftingRecipe(
+        Product.NAILS: ProductionRecipe(
             {
                 Product.METAL: 1,
             },

@@ -1,6 +1,6 @@
 from galactic_trader.engine import EconomyEngine
 from galactic_trader.exceptions import GameException
-from galactic_trader.production import CRAFTING_RECIPES
+from galactic_trader.production import PRODUCTION_RECIPES
 from galactic_trader.products import Product
 
 
@@ -9,7 +9,7 @@ class TerminalUI:
         """Initializes the terminal interface."""
         self.engine = engine
 
-    def parse_command(self, raw_input: str) -> tuple[str, Product, int]:
+    def parse_command(self, raw_input: str) -> tuple[str, Product | None, int]:
         """Parses '<command> <product> <amount>' into its components. Handles errors internally."""
         parts = raw_input.split()
 
@@ -22,7 +22,7 @@ class TerminalUI:
                 raise ValueError(f"Command '{command}' takes no arguments.")
             return command, None, 0
 
-        if command not in {"b", "s"}:
+        if command not in {"b", "s", "p"}:
             raise ValueError(f"Command '{command}' is unknown.")
         if len(parts) not in {2, 3}:
             raise ValueError(
@@ -53,7 +53,7 @@ class TerminalUI:
         print("-" * 40)
         self.render_products()
         print("-" * 40)
-        self.render_crafting_recipes()
+        self.render_production_recipes()
         print("-" * 40)
         print(self.engine.player)  # Uses Inventory.__str__
         print("-" * 40)
@@ -78,11 +78,11 @@ class TerminalUI:
         for m in self.engine.markets.values():
             print(f"- {m.product} @ {m.current_price:.2f} Credits")
 
-    def render_crafting_recipes(self) -> None:
+    def render_production_recipes(self) -> None:
         """Displays all available production recipes."""
         print("PRODUCTION RECIPES:")
 
-        for product, recipe in CRAFTING_RECIPES.items():
+        for product, recipe in PRODUCTION_RECIPES.items():
             materials_display = ", ".join(
                 f"{amount} {material}" for material, amount in recipe.materials.items()
             )
@@ -119,11 +119,15 @@ class TerminalUI:
                         is_buy=False, product=product, quantity=amount
                     )
                     print(f"\n[SUCCESS] {action} {amount} units @ {price:.2f}\n")
+                elif cmd == "p":
+                    action, price = self.engine.produce_product(
+                        product=product, quantity=amount
+                    )
+                    print(f"\n[SUCCESS] {action} {amount} units @ {price:.2f}\n")
 
             except ValueError as e:
                 print(
-                    f"\n[!] Invalid input format: {e}\n"
-                    f"Example: 'b food 5' or 's food 1'.\n"
+                    f"\n[!] Invalid input format: {e}"
                 )
             except GameException as e:
                 # Catching the logic errors from the Engine

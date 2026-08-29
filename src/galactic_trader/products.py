@@ -10,7 +10,6 @@ class ProductInfo:
     display_name : product name shown to user
     starting_price : product price at the beginning of the game
     starting_volatility : prdouct volatility at the beginning of the game
-    crafting_recipe : requirements for productions of this product or None if product cannot be produced
     """
 
     display_name: str
