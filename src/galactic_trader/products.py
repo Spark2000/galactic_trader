@@ -38,6 +38,11 @@ class Product(Enum):
         starting_price=50.0,
         starting_volatility=0.3,
     )
+    METAL = ProductInfo(
+        display_name="Metal",
+        starting_price=6.0,
+        starting_volatility=0.2,
+    )
     NAILS = ProductInfo(
         display_name="Nails",
         starting_price=1.5,
@@ -45,7 +50,7 @@ class Product(Enum):
     )
     WOOD = ProductInfo(
         display_name="Wood",
-        starting_price=13.0,
+        starting_price=8.0,
         starting_volatility=0.8,
     )
     # TODO more products e.g. ore, metal, ...
