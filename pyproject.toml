@@ -40,3 +40,15 @@ testpaths = [
     "tests",
     "src/galactic_trader",
 ]
+
+[tool.mypy]
+python_version = "3.14"
+files = [
+    "src/galactic_trader",
+    "tests",
+]
+strict = true
+warn_unreachable = true
+warn_unused_configs = true
+pretty = true
+show_error_codes = true
