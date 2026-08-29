@@ -11,17 +11,27 @@ class TerminalUI:
     def parse_command(self, raw_input: str) -> tuple[str, Product, int]:
         """Parses '<command> <product> <amount>' into its components. Handles errors internally."""
         parts = raw_input.split()
-        if len(parts) not in {2, 3}:
-            raise ValueError("Expected '<command> <product> <amount>', e.g. ‘b food 3‘.")
+
+        if not parts:
+            raise ValueError("Input cannot be empty.")
 
         command = parts[0].lower()
+        if command in {"n", "q"}:
+            if len(parts) != 1:
+                raise ValueError(f"Command '{command}' takes no arguments.")
+            return command, None, 0
+
         if command not in {"b", "s"}:
             raise ValueError(f"Command '{command}' is unknown.")
+        if len(parts) not in {2, 3}:
+            raise ValueError(
+                "Expected '<command> <product> <amount>', e.g. ‘b food 3‘."
+            )
 
         product_name = parts[1].upper()
         try:
             product = Product[product_name]
-        except(KeyError):
+        except KeyError:
             available_products = ", ".join(product.name.lower() for product in Product)
             raise ValueError(
                 f"Input must contain an available product. Given product '{parts[1]}' is unknown.\n"
@@ -34,7 +44,7 @@ class TerminalUI:
             raise ValueError("Amount must be a whole number.")
         if amount <= 0:
             raise ValueError("Amount must be greater than zero.")
-        
+
         return command, product, amount
 
     def render(self) -> None:
@@ -55,7 +65,11 @@ class TerminalUI:
 
         print("-" * 40)
         print(
-            "COMMANDS: 'b <product> <amount>' (buy), 's <product> <amount>' (sell), 'q' (quit)"
+            "COMMANDS:\n"
+            "- buy: 'b <product> <amount>',\n"
+            "- sell: 's <product> <amount>'\n"
+            "- next round: 'n'"
+            "- quit: 'q'"
         )
 
     def run(self):
@@ -63,12 +77,18 @@ class TerminalUI:
             self.render()
             user_input = input(">> ").strip().lower()
 
-            if user_input == "q":
-                print("Exiting...")
-                break
-
             try:
                 cmd, product, amount = self.parse_command(user_input)
+
+                if cmd == "q":
+                    print("Exiting...")
+                    break
+                if cmd == "n":
+                    self.engine.tick()
+                    print("\n[NEXT] Next Round started.")
+                    continue
+
+                assert product is not None
 
                 if cmd == "b":
                     action, price = self.engine.interact_with_market(
@@ -80,16 +100,11 @@ class TerminalUI:
                         is_buy=False, product=product, quantity=amount
                     )
                     print(f"\n[SUCCESS] {action} {amount} units @ {price:.2f}\n")
-                else:
-                    print("\n[!] Unknown command.\n")
-                    # Should not be reached due to validation in parse_command()
-
-                # Advance the game world
-                self.engine.tick()
 
             except ValueError as e:
                 print(
-                    f"\n[!] Invalid input format: {e}\nExample: 'b food 5' or 's food 1'.\n"
+                    f"\n[!] Invalid input format: {e}\n"
+                    f"Example: 'b food 5' or 's food 1'.\n"
                 )
             except GameException as e:
                 # Catching the logic errors from the Engine

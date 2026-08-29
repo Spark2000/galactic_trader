@@ -18,7 +18,11 @@ class EconomyEngine:
             for product in Product
         }
         self.history: list[tuple] = []
-        self.market_trend = cycle([0.2, 0.2, -0.1, -0.3])
+        self.market_trends = cycle([0.2, 0.2, -0.1, -0.3])
+        self.current_market_trend = next(self.market_trends)
+        self.pending_price_directions: dict[Product, int] = {
+            product: 0 for product in Product
+        }
 
     def interact_with_market(
         self, is_buy: bool, product: Product, quantity: int
@@ -45,12 +49,19 @@ class EconomyEngine:
         # 3. Update Market Price (Supply/Demand)
         # +1 direction for Buy, -1 for Sell
         direction = 1 if is_buy else -1
-        market.adjust_price(direction)
+        self.pending_price_directions[product] += direction * quantity
 
         return action_name, transaction_price
 
     def tick(self):
-        """Advances the simulation by one step (Background market forces)."""
-        trend = next(self.market_trend)
-        for market in self.markets.values():
+        """Advances the simulation by one round and applies all pending price changes."""
+        trend = self.current_market_trend
+        # TODO add random value to trend
+
+        for product, market in self.markets.items():
+            direction = self.pending_price_directions[product]
+            market.adjust_price(direction)
             market.set_price(market.current_price + trend)
+            self.pending_price_directions[product] = 0
+
+        self.current_market_trend = next(self.market_trends)

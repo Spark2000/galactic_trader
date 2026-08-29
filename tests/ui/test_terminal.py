@@ -22,6 +22,18 @@ def test_parse_command_sell(terminal_ui: TerminalUI) -> None:
     assert result == ("s", Product.WOOD, 1)
 
 
+def test_parse_command_next(terminal_ui: TerminalUI) -> None:
+    result = terminal_ui.parse_command("n")
+
+    assert result == ("n", None, 0)
+
+
+def test_parse_command_quit(terminal_ui: TerminalUI) -> None:
+    result = terminal_ui.parse_command("q")
+
+    assert result == ("q", None, 0)
+
+
 def test_parse_command_buy_with_default_amount(terminal_ui: TerminalUI) -> None:
     result = terminal_ui.parse_command("b food")
 
@@ -39,6 +51,9 @@ def test_parse_command_buy_with_default_amount(terminal_ui: TerminalUI) -> None:
         "b food 0",
         "b food -1",
         "b food 5 additional",
+        "n food",
+        "n 1",
+        "quit",
     ],
 )
 def test_parse_command_rejects_invalid_input(

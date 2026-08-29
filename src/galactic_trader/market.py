@@ -28,8 +28,8 @@ class Market:
         """
         Adjusts price based on supply/demand.
         direction:
-            1 for Buy (demand up -> price up),
-            -1 for Sell (supply up -> price down).
+            pos. for Buy (demand up -> price up),
+            neg. for Sell (supply up -> price down).
         """
         change = direction * self.volatility
         self.set_price(self.current_price + change)
