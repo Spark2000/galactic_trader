@@ -38,6 +38,12 @@ CRAFTING_RECIPES: Mapping[Product, CraftingRecipe] = MappingProxyType(
                 Product.NAILS: 4,
             },
             5.0,
+        ),
+        Product.NAILS: CraftingRecipe(
+            {
+                Product.METAL: 1,
+            },
+            1.0
         )
     }
 )
