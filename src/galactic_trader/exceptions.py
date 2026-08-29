@@ -3,8 +3,8 @@ class GameException(Exception):
 
 
 class NotEnoughMoneyException(GameException):
-    pass
+    """error in case a transaction fails because player does not have enough money"""
 
 
 class NotEnoughStockException(GameException):
-    pass
+    """error in case a transaction fails because player does not have enough stock"""

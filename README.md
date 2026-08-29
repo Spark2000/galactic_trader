@@ -13,3 +13,6 @@ Mypy starten:
 
 Ruff Check:
 ``uv run ruff check .``
+
+Interrogate Check:
+``uv run interrogate -vv``

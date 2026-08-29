@@ -4,6 +4,14 @@ from enum import Enum
 
 @dataclass(frozen=True)
 class ProductInfo:
+    """
+    Every Product has pre-definied informations.
+
+    display_name : product name shown to user
+    starting_price : product price at the beginning of the game
+    starting_volatility : prdouct volatility at the beginning of the game
+    """
+
     display_name: str
     starting_price: float
     starting_volatility: float
@@ -17,6 +25,7 @@ class ProductInfo:
 
 
 class Product(Enum):
+    """Enum that contains all procuts and declared their ProductInfo values"""
     FOOD = ProductInfo(
         display_name="Food", starting_price=10.0, starting_volatility=0.5
     )

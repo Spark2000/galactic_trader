@@ -73,6 +73,7 @@ class TerminalUI:
         )
 
     def run(self):
+        """Game loop for terminal ui."""
         while True:
             self.render()
             user_input = input(">> ").strip().lower()

@@ -7,7 +7,7 @@ from galactic_trader.products import Product
 
 class EconomyEngine:
     def __init__(self) -> None:
-        """Initialize state."""
+        """Initializes state."""
         self.player = Inventory(money=100.0)
         self.markets: dict[Product, Market] = {
             product: Market(
@@ -29,7 +29,7 @@ class EconomyEngine:
     ) -> tuple[str, float]:
         """
         Executes the trade logic.
-        Returns details of the transaction (Action Name, Total Price)
+        Returns details of the transaction (Action Name, Transaction Price)
         or raises an exception.
         """
         assert quantity > 0
@@ -53,7 +53,7 @@ class EconomyEngine:
 
         return action_name, transaction_price
 
-    def tick(self):
+    def tick(self) -> None:
         """Advances the simulation by one round and applies all pending price changes."""
         trend = self.current_market_trend
         # TODO add random value to trend
