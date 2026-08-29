@@ -15,6 +15,8 @@ class TerminalUI:
             raise ValueError("Expected '<command> <product> <amount>', e.g. ‘b food 3‘.")
 
         command = parts[0].lower()
+        if command not in {"b", "s"}:
+            raise ValueError(f"Command '{command}' is unknown.")
 
         product_name = parts[1].upper()
         try:
@@ -80,6 +82,7 @@ class TerminalUI:
                     print(f"\n[SUCCESS] {action} {amount} units @ {price:.2f}\n")
                 else:
                     print("\n[!] Unknown command.\n")
+                    # Should not be reached due to validation in parse_command()
 
                 # Advance the game world
                 self.engine.tick()
