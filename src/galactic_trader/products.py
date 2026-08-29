@@ -10,6 +10,7 @@ class ProductInfo:
     display_name : product name shown to user
     starting_price : product price at the beginning of the game
     starting_volatility : prdouct volatility at the beginning of the game
+    crafting_recipe : requirements for productions of this product or None if product cannot be produced
     """
 
     display_name: str
@@ -26,17 +27,26 @@ class ProductInfo:
 
 class Product(Enum):
     """Enum that contains all procuts and declared their ProductInfo values"""
+
     FOOD = ProductInfo(
-        display_name="Food", starting_price=10.0, starting_volatility=0.5
+        display_name="Food",
+        starting_price=10.0,
+        starting_volatility=0.5,
     )
     FURNITURE = ProductInfo(
-        display_name="Furniture", starting_price=50.0, starting_volatility=0.3
+        display_name="Furniture",
+        starting_price=50.0,
+        starting_volatility=0.3,
     )
     NAILS = ProductInfo(
-        display_name="Nails", starting_price=1.5, starting_volatility=0.1
+        display_name="Nails",
+        starting_price=1.5,
+        starting_volatility=0.1,
     )
     WOOD = ProductInfo(
-        display_name="Wood", starting_price=13.0, starting_volatility=0.8
+        display_name="Wood",
+        starting_price=13.0,
+        starting_volatility=0.8,
     )
     # TODO more products e.g. ore, metal, ...
 
