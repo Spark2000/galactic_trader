@@ -8,5 +8,8 @@ Tests starten:
 ``uv run pytest`` oder
 ``uv run pytest --no-cov``(ohne Converage)
 
+Mypy starten:
+``uv run mypy``
+
 Ruff Check:
 ``uv run ruff check .``
