@@ -90,8 +90,8 @@ def test_calculations_require_positive_quantity(
         cost=5.0,
     )
 
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         recipe.calculate_required_materials(quantity)
 
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         recipe.calculate_total_cost(quantity)
