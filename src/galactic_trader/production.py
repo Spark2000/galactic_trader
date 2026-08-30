@@ -1,9 +1,6 @@
 """Immutable production recipes and the games recipe registry."""
 
-from collections.abc import Mapping
 from dataclasses import dataclass
-from types import MappingProxyType
-from typing import Final
 
 from galactic_trader.products import Product
 
@@ -17,7 +14,7 @@ class ProductionRecipe:
     cost : production costs
     """
 
-    materials: Mapping[Product, int]
+    materials: dict[Product, int]
     cost: float
 
     def __post_init__(self) -> None:
@@ -30,12 +27,6 @@ class ProductionRecipe:
 
         if self.cost <= 0:
             raise ValueError("Production cost must be greater than zero.")
-
-        object.__setattr__(
-            self,
-            "materials",
-            MappingProxyType(dict(self.materials)),
-        )
 
     def calculate_required_materials(self, quantity: int) -> dict[Product, int]:
         """Calculates the materials required for a given production quantity."""
@@ -54,20 +45,18 @@ class ProductionRecipe:
 
 
 # Mapping funktioniert aehnlich zu dict, verhindert aber das aendern der Werte (nur Lesezugriff!)
-PRODUCTION_RECIPES: Final[Mapping[Product, ProductionRecipe]] = MappingProxyType(
-    {
-        Product.FURNITURE: ProductionRecipe(
-            {
-                Product.WOOD: 2,
-                Product.NAILS: 4,
-            },
-            5.0,
-        ),
-        Product.NAILS: ProductionRecipe(
-            {
-                Product.METAL: 1,
-            },
-            1.0,
-        ),
-    }
-)
+PRODUCTION_RECIPES: dict[Product, ProductionRecipe] = {
+    Product.FURNITURE: ProductionRecipe(
+        {
+            Product.WOOD: 2,
+            Product.NAILS: 4,
+        },
+        5.0,
+    ),
+    Product.NAILS: ProductionRecipe(
+        {
+            Product.METAL: 1,
+        },
+        1.0,
+    ),
+}
