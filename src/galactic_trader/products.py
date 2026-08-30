@@ -12,6 +12,10 @@ class CargoType(Enum):
     REFRIGERATED = "Refrigerated cargo"
     HAZARDOUS = "Hazardous cargo"
 
+    def __str__(self) -> str:
+        """Return the player-friendly cargo type name."""
+        return self.value
+
 
 @dataclass(frozen=True)
 class ProductInfo:

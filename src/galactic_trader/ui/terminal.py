@@ -80,7 +80,7 @@ class TerminalUI:
         print("MARKET:")
 
         for m in self.engine.markets.values():
-            print(f"- {m.product} @ {m.current_price:.2f} Credits")
+            print(f"- {m.product} @ {m.current_price:.2f} Credits ({m.product.cargo_type})")
 
     def render_production_recipes(self) -> None:
         """Displays all available production recipes."""
