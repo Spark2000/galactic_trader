@@ -31,46 +31,32 @@ class ProductInfo:
 class Product(Enum):
     """Enum that contains all procuts and declared their ProductInfo values"""
 
-    FOOD = ProductInfo(
-        display_name="Food",
-        starting_price=10.0,
-        starting_volatility=0.5,
-    )
-    FURNITURE = ProductInfo(
-        display_name="Furniture",
-        starting_price=50.0,
-        starting_volatility=0.3,
-    )
-    METAL = ProductInfo(
-        display_name="Metal",
-        starting_price=6.0,
-        starting_volatility=0.2,
-    )
-    NAILS = ProductInfo(
-        display_name="Nails",
-        starting_price=1.5,
-        starting_volatility=0.1,
-    )
-    WOOD = ProductInfo(
-        display_name="Wood",
-        starting_price=8.0,
-        starting_volatility=0.8,
-    )
-    ORE = ProductInfo(
-        display_name="Ore",
-        starting_price=5.0,
-        starting_volatility=0.5,
-    )
-    GEMS = ProductInfo(
-        display_name="Gems",
-        starting_price=35.0,
-        starting_volatility=0.1,
-    )
-    JEWELERY = ProductInfo(
-        display_name="Jewelery",
-        starting_price=80.0,
-        starting_volatility=0.1,
-    )
+    # Basic resources
+    FOOD = ProductInfo("Food", 10.0, 0.50)
+    WOOD = ProductInfo("Wood", 8.0, 0.45)
+    ORE = ProductInfo("Ore", 6.0, 0.40)
+    OIL = ProductInfo("Oil", 12.0, 0.85)
+    GEMS = ProductInfo("Gems", 35.0, 1.75)
+
+    # Processed materials
+    METAL = ProductInfo("Metal", 16.0, 0.65)
+    NAILS = ProductInfo("Nails", 20.0, 0.55)
+    FUEL = ProductInfo("Fuel", 30.0, 1.20)
+    CHEMICALS = ProductInfo("Chemicals", 38.0, 1.30)
+    TEXTILES = ProductInfo("Textiles", 31.0, 0.90)
+
+    # Consumer and industrial goods
+    FURNITURE = ProductInfo("Furniture", 52.0, 1.50)
+    CLOTHING = ProductInfo("Clothing", 78.0, 2.00)
+    MEDICINE = ProductInfo("Medicine", 68.0, 2.40)
+    MACHINES = ProductInfo("Machines", 86.0, 2.80)
+    ELECTRONICS = ProductInfo("Electronics", 118.0, 3.50)
+    JEWELRY = ProductInfo("Jewelry", 115.0, 4.00)
+
+    # High-value goods
+    WEAPONS = ProductInfo("Weapons", 240.0, 6.00)
+    ROBOTS = ProductInfo("Robots", 310.0, 7.50)
+    STARSHIP_PARTS = ProductInfo("Starship Parts", 415.0, 10.00)
 
     @property
     def display_name(self) -> str:
