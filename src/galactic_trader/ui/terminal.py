@@ -110,7 +110,7 @@ class TerminalUI:
                     event = self.engine.tick()
                     print("\n[NEXT] Next Round started.")
                     if event is None:
-                        print("[EVENT] NO market evet this round.")
+                        print("[EVENT] No market event this round.")
                     else:
                         print(f"[EVENT] {event.message}")
                     continue

@@ -24,7 +24,9 @@ def test_markets_use_product_starting_values(engine: EconomyEngine) -> None:
     assert food_market.volatility == Product.FOOD.starting_volatility
 
 
-def test_trade_does_not_change_price_before_next_round(engine: EconomyEngine) -> None:
+def test_trade_buy_does_not_change_price_before_next_round(
+    engine: EconomyEngine,
+) -> None:
     starting_price = engine.markets[Product.FOOD].current_price
 
     engine.interact_with_market(is_buy=True, product=Product.FOOD, quantity=1)
@@ -56,16 +58,19 @@ def test_failed_trade_does_not_change_price_before_next_round(
 
 
 def test_tick_applies_pending_trade_and_market_trend(engine: EconomyEngine) -> None:
-    starting_price = engine.markets[Product.FOOD].current_price
-    volatility = engine.markets[Product.FOOD].volatility
-    trend = engine.current_market_trend
+    market = engine.markets[Product.FOOD]
+    starting_price = market.current_price
+    volatility = market.volatility
     engine.interact_with_market(is_buy=True, product=Product.FOOD, quantity=1)
 
     engine.tick()
 
-    expected_price = round(starting_price + volatility + trend, 2)
+    expected_price = round(
+        starting_price + volatility + engine.last_effective_market_trend,
+        2,
+    )
 
-    assert engine.markets[Product.FOOD].current_price == pytest.approx(expected_price)
+    assert market.current_price == pytest.approx(expected_price)
 
 
 def test_trade_quantity_scales_pending_price_effect(engine: EconomyEngine) -> None:
@@ -73,13 +78,14 @@ def test_trade_quantity_scales_pending_price_effect(engine: EconomyEngine) -> No
     quantity = 3
     market = engine.markets[product]
     starting_price = market.current_price
-    trend = engine.current_market_trend
 
     engine.interact_with_market(is_buy=True, product=product, quantity=quantity)
     engine.tick()
 
     expected_price = round(
-        starting_price + (quantity * market.volatility) + trend,
+        starting_price
+        + quantity * market.volatility
+        + engine.last_effective_market_trend,
         2,
     )
     assert market.current_price == pytest.approx(expected_price)
@@ -91,13 +97,16 @@ def test_tick_resets_pending_trade_effect(engine: EconomyEngine) -> None:
     engine.tick()
 
     price_after_first_tick = engine.markets[Product.FOOD].current_price
-    trend_second = engine.current_market_trend
 
     engine.tick()
 
-    expected_price = round(price_after_first_tick + trend_second, 2)
+    expected_price = round(
+        price_after_first_tick + engine.last_effective_market_trend,
+        2,
+    )
 
     assert engine.markets[Product.FOOD].current_price == pytest.approx(expected_price)
+    assert engine.pending_price_directions[Product.FOOD] == 0
 
 
 def test_produce_product_updates_inventory_and_history(engine: EconomyEngine) -> None:
