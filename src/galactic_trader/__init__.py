@@ -1,2 +1,1 @@
-def main() -> None:
-    print("Hello from galactic-trader!")
+"""Turn-based trading simulation package."""

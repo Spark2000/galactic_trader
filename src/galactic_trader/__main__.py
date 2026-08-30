@@ -1,3 +1,5 @@
+"""Command-line entry point for Galactic Trader."""
+
 from galactic_trader.engine import EconomyEngine
 from galactic_trader.ui.terminal import TerminalUI
 
