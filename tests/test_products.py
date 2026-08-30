@@ -27,4 +27,4 @@ def test_product_exposes_its_information() -> None:
 
 
 def test_product_string_uses_display_name() -> None:
-    assert str(Product.FURNITURE) == Product.display_name
+    assert str(Product.FURNITURE) == Product.FURNITURE.display_name
