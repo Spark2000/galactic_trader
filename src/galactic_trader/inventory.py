@@ -2,7 +2,11 @@
 
 from dataclasses import dataclass, field
 
-from galactic_trader.exceptions import NotEnoughMoneyException, NotEnoughStockException
+from galactic_trader.exceptions import (
+    NotEnoughMaterialsException,
+    NotEnoughMoneyException,
+    NotEnoughStockException,
+)
 from galactic_trader.production import ProductionRecipe
 from galactic_trader.products import Product
 
@@ -69,7 +73,7 @@ class Inventory:
             missing_display = ", ".join(
                 f"{amount} {material}" for material, amount in missing_materials.items()
             )
-            raise NotEnoughStockException(f"Missing materials: {missing_display}.")
+            raise NotEnoughMaterialsException(f"Missing materials: {missing_display}.")
 
         # only change inventory values after checks have passed
         self.money -= total_cost

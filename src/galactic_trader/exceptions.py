@@ -6,8 +6,16 @@ class GameException(Exception):
 
 
 class NotEnoughMoneyException(GameException):
-    """error in case a transaction fails because player does not have enough money"""
+    """Report that the player has not enough money to perform an action."""
 
 
 class NotEnoughStockException(GameException):
-    """error in case a transaction fails because player does not have enough stock"""
+    """Report that the player has not enough stock to perform an action."""
+
+
+class NotEnoughMaterialsException(NotEnoughStockException):
+    """Report that materials required for production are unavailable."""
+
+
+class NotProducibleException(GameException):
+    """Report that no production recipe exists for a product."""

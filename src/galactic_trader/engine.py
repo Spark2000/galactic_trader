@@ -3,6 +3,7 @@
 from collections.abc import Iterator
 from itertools import cycle
 
+from galactic_trader.exceptions import NotProducibleException
 from galactic_trader.inventory import Inventory
 from galactic_trader.market import Market
 from galactic_trader.production import PRODUCTION_RECIPES
@@ -69,7 +70,7 @@ class EconomyEngine:
         recipe = PRODUCTION_RECIPES.get(product)
 
         if recipe is None:
-            raise ValueError(f"{product} cannot be produced.")
+            raise NotProducibleException(f"{product} cannot be produced.")
 
         total_cost = self.player.execute_production(
             product=product,

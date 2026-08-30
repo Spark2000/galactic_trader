@@ -31,6 +31,12 @@ class ProductionRecipe:
         if self.cost <= 0:
             raise ValueError("Production cost must be greater than zero.")
 
+        object.__setattr__(
+            self,
+            "materials",
+            MappingProxyType(dict(self.materials)),
+        )
+
     def calculate_required_materials(self, quantity: int) -> dict[Product, int]:
         """Calculates the materials required for a given production quantity."""
         assert quantity > 0
@@ -61,7 +67,7 @@ PRODUCTION_RECIPES: Final[Mapping[Product, ProductionRecipe]] = MappingProxyType
             {
                 Product.METAL: 1,
             },
-            1.0
-        )
+            1.0,
+        ),
     }
 )
