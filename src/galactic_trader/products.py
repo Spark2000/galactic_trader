@@ -56,7 +56,21 @@ class Product(Enum):
         starting_price=8.0,
         starting_volatility=0.8,
     )
-    # TODO more products e.g. ore, metal, ...
+    ORE = ProductInfo(
+        display_name="Ore",
+        starting_price=5.0,
+        starting_volatility=0.5,
+    )
+    GEMS = ProductInfo(
+        display_name="Gems",
+        starting_price=35.0,
+        starting_volatility=0.1,
+    )
+    JEWELERY = ProductInfo(
+        display_name="Jewelery",
+        starting_price=80.0,
+        starting_volatility=0.1,
+    )
 
     @property
     def display_name(self) -> str:
