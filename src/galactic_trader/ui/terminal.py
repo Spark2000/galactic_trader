@@ -94,7 +94,7 @@ class TerminalUI:
                 f"- {product}: {recipe.cost:.2f} Credits | Materials: {materials_display}"
             )
 
-    def run(self):
+    def run(self) -> None:
         """Game loop for terminal ui."""
         while True:
             self.render()
