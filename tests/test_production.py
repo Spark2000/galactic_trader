@@ -2,7 +2,7 @@
 
 import pytest
 
-from galactic_trader.production import PRODUCTION_RECIPES, ProductionRecipe
+from galactic_trader.production import ProductionRecipe
 from galactic_trader.products import Product
 
 
