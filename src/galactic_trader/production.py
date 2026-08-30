@@ -1,6 +1,9 @@
+"""Immutable production recipes and the games recipe registry."""
+
 from collections.abc import Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
+from typing import Final
 
 from galactic_trader.products import Product
 
@@ -45,7 +48,7 @@ class ProductionRecipe:
 
 
 # Mapping funktioniert aehnlich zu dict, verhindert aber das aendern der Werte (nur Lesezugriff!)
-PRODUCTION_RECIPES: Mapping[Product, ProductionRecipe] = MappingProxyType(
+PRODUCTION_RECIPES: Final[Mapping[Product, ProductionRecipe]] = MappingProxyType(
     {
         Product.FURNITURE: ProductionRecipe(
             {

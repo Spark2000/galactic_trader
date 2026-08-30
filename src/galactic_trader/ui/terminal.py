@@ -1,3 +1,5 @@
+"""Terminal-based user interface for Galactic Trader."""
+
 from galactic_trader.engine import EconomyEngine
 from galactic_trader.exceptions import GameException
 from galactic_trader.production import PRODUCTION_RECIPES
@@ -5,6 +7,8 @@ from galactic_trader.products import Product
 
 
 class TerminalUI:
+    """Parses terminal commands and renders the current game state."""
+
     def __init__(self, engine: EconomyEngine) -> None:
         """Initializes the terminal interface."""
         self.engine = engine
@@ -126,9 +130,7 @@ class TerminalUI:
                     print(f"\n[SUCCESS] {action} {amount} units @ {price:.2f}\n")
 
             except ValueError as e:
-                print(
-                    f"\n[!] Invalid input format: {e}"
-                )
+                print(f"\n[!] Invalid input format: {e}")
             except GameException as e:
                 # Catching the logic errors from the Engine
                 print(f"\n[!] TRANSACTION FAILED: {e}\n")

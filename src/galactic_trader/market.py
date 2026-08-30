@@ -1,3 +1,5 @@
+"""Market state and price-adjustment rules for individual products."""
+
 from dataclasses import dataclass
 
 from galactic_trader.products import Product

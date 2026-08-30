@@ -1,3 +1,6 @@
+"""Game-specifc exceptions raised by Galactic Trader."""
+
+
 class GameException(Exception):
     """Base class for all game-related errors."""
 

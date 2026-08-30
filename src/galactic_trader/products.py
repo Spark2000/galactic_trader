@@ -1,3 +1,5 @@
+"""Product definitions and their immutable starting values."""
+
 from dataclasses import dataclass
 from enum import Enum
 
@@ -18,6 +20,8 @@ class ProductInfo:
 
     def __post_init__(self) -> None:
         """Validates the initial starting values."""
+        if not self.display_name.strip():
+            raise ValueError("Displayname must not be empty.")
         if self.starting_volatility < 0:
             raise ValueError("Volatility must not be negative.")
         if self.starting_price < 1.0:

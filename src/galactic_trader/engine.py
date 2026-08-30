@@ -1,3 +1,6 @@
+"""Coordinates markets, player actions and round progression."""
+
+from collections.abc import Iterator
 from itertools import cycle
 
 from galactic_trader.inventory import Inventory
@@ -7,6 +10,8 @@ from galactic_trader.products import Product
 
 
 class EconomyEngine:
+    """Coordinates the mutable state and rules of the simulation."""
+
     def __init__(self) -> None:
         """Initializes state."""
         self.player = Inventory(money=100.0)
@@ -18,8 +23,8 @@ class EconomyEngine:
             )
             for product in Product
         }
-        self.history: list[tuple] = []
-        self.market_trends = cycle([0.2, 0.2, -0.1, -0.3])
+        self.history: list[tuple[str, str, int, float]] = []
+        self.market_trends: Iterator[float] = cycle([0.2, 0.2, -0.1, -0.3])
         self.current_market_trend = next(self.market_trends)
         self.pending_price_directions: dict[Product, int] = {
             product: 0 for product in Product
@@ -54,7 +59,11 @@ class EconomyEngine:
 
         return action_name, transaction_price
 
-    def produce_product(self, product, quantity) -> float:
+    def produce_product(self, product: Product, quantity: int) -> tuple[str, float]:
+        """
+        Produces a product if the product has a recipe.
+        Return Action name and sum of cost or throws an exception.
+        """
         assert quantity > 0
 
         recipe = PRODUCTION_RECIPES.get(product)
@@ -69,9 +78,7 @@ class EconomyEngine:
         )
 
         action_name = "PRODUCE"
-        self.history.append(
-            (action_name, str(product), quantity, total_cost)
-        )
+        self.history.append((action_name, str(product), quantity, total_cost))
 
         return action_name, total_cost
 

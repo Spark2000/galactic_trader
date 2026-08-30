@@ -1,3 +1,5 @@
+"""Stores and updates player money and stock."""
+
 from dataclasses import dataclass, field
 
 from galactic_trader.exceptions import NotEnoughMoneyException, NotEnoughStockException
@@ -18,8 +20,8 @@ class Inventory:
         - Positive quantity = BUY (Money down, Stock up)
         - Negative quantity = SELL (Money up, Stock down)
         """
-
         assert quantity != 0
+        assert unit_price > 0
 
         cost = quantity * unit_price
 
@@ -38,17 +40,15 @@ class Inventory:
 
         # 2. Execution Logic (Only runs if Validation passes)
         self.money -= cost
-        current_qty = self.stock.get(product, 0)
-        self.stock[product] = current_qty + quantity
+        self.adjust_stock(product, quantity)
 
     def execute_production(
         self, product: Product, quantity: int, recipe: ProductionRecipe
-    ) -> None:
+    ) -> float:
         """
         Executes the production of given product.
         Removes the required materials and production cost and adds the produced products at given quantity
         """
-
         assert quantity > 0
 
         total_cost = recipe.calculate_total_cost(quantity)
@@ -85,7 +85,7 @@ class Inventory:
         """Adjusts (increases/ decreses) amount by given value."""
         current_amount = self.stock.get(product, 0)
 
-        if change < 0 and current_amount < (change * -1):
+        if change < 0 and current_amount < abs(change):
             raise ValueError("Stock value cannot be negative, change value ist too low")
 
         self.stock[product] = current_amount + change
