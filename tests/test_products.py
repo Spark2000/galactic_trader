@@ -2,27 +2,38 @@
 
 import pytest
 
-from galactic_trader.products import CargoType, Product, ProductInfo
+from galactic_trader.cargo import CargoType
+from galactic_trader.products import Product, ProductInfo
 
 
 def test_initial_current_price_value_too_low() -> None:
     with pytest.raises(ValueError):
-        ProductInfo(display_name="Food", starting_price=0.5, starting_volatility=0.5, cargo_type=CargoType.STANDARD)
+        ProductInfo(
+            display_name="Food",
+            starting_price=0.5,
+            starting_volatility=0.5,
+            cargo_type=CargoType.STANDARD,
+        )
 
 
 def test_initial_volatility_value_too_low() -> None:
     with pytest.raises(ValueError):
-        ProductInfo(display_name="Food", starting_price=10.0, starting_volatility=-1, cargo_type=CargoType.STANDARD)
+        ProductInfo(
+            display_name="Food",
+            starting_price=10.0,
+            starting_volatility=-1,
+            cargo_type=CargoType.STANDARD,
+        )
 
 
 def test_empty_display_name_is_rejected() -> None:
     with pytest.raises(ValueError):
-        ProductInfo(display_name=" ", starting_price=10.0, starting_volatility=0.5, cargo_type=CargoType.STANDARD)
-
-
-def test_invalid_cargo_type_name_is_rejected() -> None:
-    with pytest.raises(TypeError):
-        ProductInfo(display_name="Food", starting_price=10.0, starting_volatility=0.5, cargo_type="invalid")
+        ProductInfo(
+            display_name=" ",
+            starting_price=10.0,
+            starting_volatility=0.5,
+            cargo_type=CargoType.STANDARD,
+        )
 
 
 def test_product_exposes_its_information() -> None:

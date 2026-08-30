@@ -3,18 +3,7 @@
 from dataclasses import dataclass
 from enum import Enum
 
-
-class CargoType(Enum):
-    """Describes the type of cargo hold required for a product."""
-
-    STANDARD = "Standard cargo"
-    LIQUID = "Liquid cargo"
-    REFRIGERATED = "Refrigerated cargo"
-    HAZARDOUS = "Hazardous cargo"
-
-    def __str__(self) -> str:
-        """Return the player-friendly cargo type name."""
-        return self.value
+from galactic_trader.cargo import CargoType
 
 
 @dataclass(frozen=True)
