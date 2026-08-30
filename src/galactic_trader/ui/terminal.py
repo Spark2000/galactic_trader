@@ -107,8 +107,12 @@ class TerminalUI:
                     print("Exiting...")
                     break
                 if cmd == "n":
-                    self.engine.tick()
+                    event = self.engine.tick()
                     print("\n[NEXT] Next Round started.")
+                    if event is None:
+                        print("[EVENT] NO market evet this round.")
+                    else:
+                        print(f"[EVENT] {event.message}")
                     continue
 
                 assert product is not None

@@ -2,19 +2,39 @@
 
 from collections.abc import Iterator
 from itertools import cycle
+from random import Random
+from typing import Final
 
+from galactic_trader.events import (
+    DEFAULT_EVENT_PROBABILITY,
+    EventOccurrence,
+    choose_market_event,
+)
 from galactic_trader.exceptions import NotProducibleException
 from galactic_trader.inventory import Inventory
 from galactic_trader.market import Market
 from galactic_trader.production import PRODUCTION_RECIPES
 from galactic_trader.products import Product
 
+TREND_MULTIPLIER_MIN: Final[float] = 0.90
+TREND_MULTIPLIER_MAX: Final[float] = 1.10
+
 
 class EconomyEngine:
     """Coordinates the mutable state and rules of the simulation."""
 
-    def __init__(self) -> None:
-        """Initializes state."""
+    def __init__(
+        self,
+        *,
+        random_seed: int | None = None,
+        event_probability: float = DEFAULT_EVENT_PROBABILITY,
+    ) -> None:
+        """Initializes engine state."""
+        if not 0 <= event_probability <= 1:
+            raise ValueError("Event probability must be between zero and one.")
+
+        self._random = Random(random_seed)
+
         self.player = Inventory(money=100.0)
         self.markets: dict[Product, Market] = {
             product: Market(
@@ -24,12 +44,18 @@ class EconomyEngine:
             )
             for product in Product
         }
-        self.history: list[tuple[str, str, int, float]] = []
-        self.market_trends: Iterator[float] = cycle([0.2, 0.2, -0.1, -0.3])
-        self.current_market_trend = next(self.market_trends)
+        self._market_trends: Iterator[float] = cycle([0.2, 0.2, -0.1, -0.3])
+        self.current_market_trend = next(self._market_trends)
+        self.last_trend_multiplier = 1.0
+        self.last_effective_market_trend = self.current_market_trend
+
         self.pending_price_directions: dict[Product, int] = {
             product: 0 for product in Product
         }
+        self.history: list[tuple[str, str, int, float]] = []
+
+        self.event_probability = event_probability
+        self.last_market_event: EventOccurrence | None = None
 
     def interact_with_market(
         self, is_buy: bool, product: Product, quantity: int
@@ -83,15 +109,27 @@ class EconomyEngine:
 
         return action_name, total_cost
 
-    def tick(self) -> None:
+    def tick(self) -> EventOccurrence | None:
         """Advances the simulation by one round and applies all pending price changes."""
-        trend = self.current_market_trend
-        # TODO add random value to trend
+        self.last_trend_multiplier = self._random.uniform(
+            TREND_MULTIPLIER_MIN, TREND_MULTIPLIER_MAX
+        )
+        self.last_effective_market_trend = (
+            self.current_market_trend * self.last_trend_multiplier
+        )
 
         for product, market in self.markets.items():
             direction = self.pending_price_directions[product]
             market.adjust_price(direction)
-            market.set_price(market.current_price + trend)
+            market.set_price(market.current_price + self.last_effective_market_trend)
             self.pending_price_directions[product] = 0
 
-        self.current_market_trend = next(self.market_trends)
+        selected_event = choose_market_event(self._random, self.event_probability)
+        if selected_event is None:
+            self.last_market_event = None
+        else:
+            self.last_market_event = selected_event.apply(self.markets, self._random)
+
+        self.current_market_trend = next(self._market_trends)
+
+        return self.last_market_event
