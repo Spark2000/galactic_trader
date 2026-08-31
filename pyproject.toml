@@ -7,7 +7,9 @@ authors = [
     { name = "Spark2000", email = "paulalex.wetzel@gmail.com" }
 ]
 requires-python = ">=3.14"
-dependencies = []
+dependencies = [
+    "pygame-ce>=2.5,<3",
+]
 
 [project.scripts]
 galactic-trader = "galactic_trader.__main__:main"

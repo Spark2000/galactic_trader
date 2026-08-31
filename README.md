@@ -1,18 +1,16 @@
-### Terminal-Befehle
+### Galactic Trader starten
 
-Programm starten:
-``uv run galactic-trader`` oder 
+Grafische Oberfläche mit pygame-ce (Standard):
+``uv run galactic-trader`` oder
 ``uv run python -m galactic_trader``
 
-Tests starten:
-``uv run pytest`` oder
-``uv run pytest --no-cov``(ohne Converage)
+Bestehende Terminal-Oberfläche:
+``uv run galactic-trader --ui terminal``
 
-Mypy starten:
-``uv run mypy``
+Die grafische Oberfläche unterstützt zusätzlich folgende Tastenkürzel:
 
-Ruff Check:
-``uv run ruff check .``
-
-Interrogate Check:
-``uv run interrogate -vv``
+- ``1`` bis ``4``: Markt, Produktion, Flotte und Investitionen
+- ``N``: nächste Runde
+- ``Ctrl+S``: speichern
+- ``Ctrl+L``: laden
+- ``Esc``: Dialog schließen bzw. Spiel beenden
