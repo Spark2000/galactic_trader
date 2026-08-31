@@ -18,6 +18,7 @@ from galactic_trader.events_transport import (
 )
 from galactic_trader.exceptions import (
     IncompatibleCargoException,
+    InvestmentAlreadyOwnedException,
     NotEnoughCargoCapacityException,
     NotEnoughMoneyException,
     NotProducibleException,
@@ -25,10 +26,15 @@ from galactic_trader.exceptions import (
 )
 from galactic_trader.fleet import Fleet, OwnedShip
 from galactic_trader.inventory import Inventory
+from galactic_trader.investments import (
+    Investment,
+    InvestmentModifier,
+    InvestmentPortfolio,
+)
 from galactic_trader.market import Market
 from galactic_trader.production import PRODUCTION_RECIPES
 from galactic_trader.products import Product
-from galactic_trader.ships import get_ship_model
+from galactic_trader.ships import ShipModel, get_ship_model
 from galactic_trader.transport import (
     CompletedDelivery,
     ProductPurchase,
@@ -70,6 +76,7 @@ class EconomyEngine:
 
         self.player = Inventory(money=100.0)
         self.fleet = Fleet()
+        self.investments = InvestmentPortfolio()
         self.markets: dict[Product, Market] = {
             product: Market(
                 product=product,
@@ -210,6 +217,9 @@ class EconomyEngine:
             product=product,
             quantity=quantity,
             recipe=recipe,
+            cost_multiplier=self.investments.get_multiplier(
+                InvestmentModifier.PRODUCTION_COST
+            ),
         )
 
         action_name = "PRODUCE"
@@ -217,10 +227,45 @@ class EconomyEngine:
 
         return action_name, total_cost
 
+    def get_production_cost(self, product: Product, quantity: int = 1) -> float:
+        """Returns the effective production cost for a product quantity."""
+        if quantity <= 0:
+            raise ValueError("Quantity must be greater than zero.")
+
+        recipe = PRODUCTION_RECIPES.get(product)
+        if recipe is None:
+            raise NotProducibleException(f"{product} cannot be produced.")
+
+        multiplier = self.investments.get_multiplier(InvestmentModifier.PRODUCTION_COST)
+        return round(recipe.calculate_total_cost(quantity) * multiplier, 2)
+
+    def get_ship_purchase_price(self, model: ShipModel) -> float:
+        """Returns the effective purchase price of a spaceship model."""
+        multiplier = self.investments.get_multiplier(
+            InvestmentModifier.SHIP_PURCHASE_PRICE
+        )
+        return round(model.purchase_price * multiplier, 2)
+
+    def buy_investment(
+        self,
+        investment: Investment,
+    ) -> tuple[Investment, float]:
+        """Purchases one permanent investment exactly once."""
+        if self.investments.owns(investment):
+            raise InvestmentAlreadyOwnedException(
+                f"{investment} has already been purchased."
+            )
+
+        purchase_price = investment.purchase_price
+        self.player.pay(purchase_price)
+        self.investments.add(investment)
+        self.history.append(("BUY_INVESTMENT", str(investment), 1, purchase_price))
+        return investment, purchase_price
+
     def buy_ship(self, model_id: str) -> tuple[OwnedShip, float]:
         """Buy one spaceship and return it with its purchase price."""
         model = get_ship_model(model_id)
-        purchase_price = model.purchase_price
+        purchase_price = self.get_ship_purchase_price(model)
 
         self.player.pay(purchase_price)
         purchased_ship = self.fleet.add_ship(model)
@@ -280,17 +325,18 @@ class EconomyEngine:
             random_generator=self._random,
             probability=self.pirate_attack_probability,
         )
-        
+
         completed_deliveries: list[CompletedDelivery] = []
         for ship in self.fleet.ships:
             completed_transport = ship.advance_transport()
             if completed_transport is None:
                 continue
 
-            self.player.adjust_stock(
-                completed_transport.product,
-                completed_transport.quantity,
-            )
+            if completed_transport.quantity > 0:
+                self.player.adjust_stock(
+                    completed_transport.product,
+                    completed_transport.quantity,
+                )
             completed_deliveries.append(
                 CompletedDelivery(
                     ship_id=ship.ship_id,

@@ -55,13 +55,21 @@ class Inventory:
         self.credit(total)
 
     def execute_production(
-        self, product: Product, quantity: int, recipe: ProductionRecipe
+        self,
+        product: Product,
+        quantity: int,
+        recipe: ProductionRecipe,
+        cost_multiplier: float = 1.0,
     ) -> float:
         """Consumes materials and credits and adds the produced products."""
         if quantity <= 0:
             raise ValueError("Quantity must be greater than zero.")
+        if not 0 < cost_multiplier <= 1:
+            raise ValueError(
+                "Production cost multiplier must be greater than zero and at most one."
+            )
 
-        total_cost = recipe.calculate_total_cost(quantity)
+        total_cost = round(recipe.calculate_total_cost(quantity) * cost_multiplier, 2)
         required_materials = recipe.calculate_required_materials(quantity)
 
         if self.money < total_cost:

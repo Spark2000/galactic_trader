@@ -4,7 +4,8 @@ from dataclasses import dataclass
 
 from galactic_trader.cargo import CargoType
 from galactic_trader.engine import EconomyEngine
-from galactic_trader.exceptions import GameException
+from galactic_trader.exceptions import GameException, UnknownInvestmentException
+from galactic_trader.investments import Investment, get_investment
 from galactic_trader.production import PRODUCTION_RECIPES
 from galactic_trader.products import Product
 from galactic_trader.ships import get_ship_models
@@ -20,6 +21,7 @@ class ParsedCommand:
     amount: int = 0
     ship_model_id: str | None = None
     ship_id: int | None = None
+    investment: Investment | None = None
 
 
 class TerminalUI:
@@ -38,9 +40,13 @@ class TerminalUI:
         command = parts[0].lower()
 
         if command == "help":
-            if len(parts) == 2 and parts[1].lower() == "ships":
+            if len(parts) != 2:
+                raise ValueError("Expected 'help ships' or 'help investments'.")
+            if parts[1].lower() == "ships":
                 return ParsedCommand(action="help_ships")
-            raise ValueError("Expected 'help ships'.")
+            if parts[1].lower() == "investments":
+                return ParsedCommand(action="help_investments")
+            raise ValueError("Expected 'help ships' or 'help investments'.")
 
         if command == "my":
             if len(parts) == 2 and parts[1].lower() == "ships":
@@ -51,6 +57,14 @@ class TerminalUI:
             if len(parts) != 3:
                 raise ValueError("Expected 'buy ship <model_id>'.")
             return ParsedCommand(action="buy_ship", ship_model_id=parts[2].lower())
+        if command == "buy" and len(parts) >= 2 and parts[1].lower() == "investment":
+            if len(parts) != 3:
+                raise ValueError("Expected 'buy investment <investment_id>'.")
+            try:
+                investment = get_investment(parts[2])
+            except UnknownInvestmentException as error:
+                raise ValueError(str(error)) from None
+            return ParsedCommand(action="buy_investment", investment=investment)
 
         if command == "sell" and len(parts) >= 2 and parts[1].lower() == "ship":
             if len(parts) != 3:
@@ -150,6 +164,9 @@ class TerminalUI:
             "  - sell: 'sell ship <ship_id>'\n"
             "  - owned spaceships: 'my ships'\n"
             "  - spaceship catalog: 'help ships'\n"
+            "- Investments:\n"
+            "  - buy: 'buy investment <investment_id>'\n"
+            "  - investment catalog: 'help investments'\n"
             "- Other:\n"
             "  - next round: 'n'\n"
             "  - quit: 'q'"
@@ -170,31 +187,62 @@ class TerminalUI:
         print("PRODUCTION RECIPES:")
 
         for product, recipe in PRODUCTION_RECIPES.items():
+            effective_cost = self.engine.get_production_cost(product)
             materials_display = ", ".join(
                 f"{amount} {material}" for material, amount in recipe.materials.items()
             )
+            if effective_cost == recipe.cost:
+                cost_display = f"{effective_cost:.2f} Credits"
+            else:
+                cost_display = (
+                    f"{effective_cost:.2f} Credits "
+                    f"(Base: {recipe.cost:.2f})"
+                )
             print(
-                f"- {product}: {recipe.cost:.2f} Credits | Materials: {materials_display}"
+                f"- {product}: {cost_display} | Materials: {materials_display}"
             )
 
     def render_ship_models(self) -> None:
-        """Display all spaceship models grouped by supported cargo type."""
+        """Displays all spaceship models grouped by supported cargo type."""
         print("SPACESHIP MODELS:")
 
         for cargo_type in CargoType:
             print(f"\n{cargo_type}:")
 
             for model in get_ship_models(cargo_type):
+                effective_price = self.engine.get_ship_purchase_price(model)
+                if effective_price == model.purchase_price:
+                    price_display = f"{effective_price:.2f} Credits"
+                else:
+                    price_display = (
+                        f"{effective_price:.2f} Credits "
+                        f"(Base: {model.purchase_price:.2f})"
+                    )
                 print(
                     f"- [{model.model_id}] {model.display_name} "
                     f"| Capacity: {model.cargo_capacity} "
                     f"| Speed: {model.speed_rating} "
                     f"| Defense: {model.defense_rating} "
-                    f"| Price: {model.purchase_price:.2f} Credits"
+                    f"| Price: {price_display}"
                 )
 
+    def render_investments(self) -> None:
+        """Displays investments with their prices, effects, and status."""
+        print("INVESTMENTS:")
+        for investment in Investment:
+            status = (
+                "PURCHASED" if self.engine.investments.owns(investment) else "AVAILABLE"
+            )
+            print(
+                f"- [{investment.investment_id}] "
+                f"{investment.display_name} "
+                f"| Price: {investment.purchase_price:.2f} Credits "
+                f"| Effect: {investment.description} "
+                f"| Status: {status}"
+            )
+
     def render_owned_ships(self) -> None:
-        """Display every spaceship currently owned by the player."""
+        """Displays every spaceship currently owned by the player."""
         print("YOUR SPACESHIPS:")
         if not self.engine.fleet.ships:
             print("- No spaceships owned.")
@@ -222,7 +270,7 @@ class TerminalUI:
             )
 
     def run(self) -> None:
-        """Run the terminal input loop until the user quits."""
+        """Runs the terminal input loop until the user quits."""
         while True:
             self.render()
             user_input = input(">> ").strip().lower()
@@ -248,6 +296,9 @@ class TerminalUI:
                 if cmd.action == "help_ships":
                     self.render_ship_models()
                     continue
+                if cmd.action == "help_investments":
+                    self.render_investments()
+                    continue
                 if cmd.action == "my_ships":
                     self.render_owned_ships()
                     continue
@@ -260,6 +311,16 @@ class TerminalUI:
                     assert cmd.ship_id is not None
                     owned_ship, price = self.engine.sell_ship(cmd.ship_id)
                     print(f"\n[SUCCESS] Sold {owned_ship} for {price:.2f} Credits.\n")
+                    continue
+                if cmd.action == "buy_investment":
+                    assert cmd.investment is not None
+                    investment, price = self.engine.buy_investment(
+                        cmd.investment
+                    )
+                    print(
+                        f"\n[SUCCESS] Bought {investment} "
+                        f"for {price:.2f} Credits.\n"
+                    )
                     continue
 
                 assert cmd.product is not None

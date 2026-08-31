@@ -39,3 +39,11 @@ class IncompatibleCargoException(GameException):
 
 class NotEnoughCargoCapacityException(GameException):
     """Report that a spaceship cannot hold the requested quantity."""
+
+
+class UnknownInvestmentException(GameException):
+    """Report that no investment has the requested identifier."""
+
+
+class InvestmentAlreadyOwnedException(GameException):
+    """Report that an investment has already been purchased."""
