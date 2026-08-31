@@ -17,7 +17,7 @@ from galactic_trader.ships import get_ship_model
 @pytest.fixture
 def engine() -> EconomyEngine:
     """Create a deterministic engine with enough money for feature tests."""
-    result = EconomyEngine(random_seed=42, event_probability=0)
+    result = EconomyEngine(random_seed=42, event_probability=0, pirate_attack_probability=0)
     result.player.money = 10_000.0
     return result
 
