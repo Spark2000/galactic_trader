@@ -3,16 +3,35 @@
 import pytest
 
 from galactic_trader.cargo import CargoType
+from galactic_trader.exceptions import UnknownShipModelException
 from galactic_trader.products import Product
-from galactic_trader.ships import ShipModel, get_all_ship_models, get_ship_models
+from galactic_trader.ships import (
+    ShipModel,
+    get_all_ship_models,
+    get_ship_model,
+    get_ship_models,
+)
 
 
-def test_model_names_are_unique() -> None:
+def test_model_ids_and_display_names_are_unique() -> None:
     models = get_all_ship_models()
-    names = [model.display_name for model in models]
+    model_ids = [model.model_id for model in models]
+    display_names = [model.display_name for model in models]
 
     assert len(models) >= 13
-    assert len(names) == len(set(names))
+    assert len(model_ids) == len(set(model_ids))
+    assert len(display_names) == len(set(display_names))
+
+def test_get_ship_model_accepts_normalized_user_input() -> None:
+    model = get_ship_model("  ATLAS_RUNNER  ")
+
+    assert model.model_id == "atlas_runner"
+    assert model.display_name == "Atlas Runner"
+
+
+def test_get_ship_model_rejects_unknown_id() -> None:
+    with pytest.raises(UnknownShipModelException):
+        get_ship_model("unknown_ship")
 
 
 def test_ship_only_accepts_its_own_cargo_type() -> None:
@@ -41,6 +60,7 @@ def test_ship_model_rejects_invalid_values(
     invalid_value: int,
 ) -> None:
     values: dict[str, object] = {
+        "model_id": "test_ship",
         "display_name": "Test Ship",
         "cargo_type": CargoType.STANDARD,
         "cargo_capacity": 10,

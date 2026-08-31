@@ -10,7 +10,10 @@ from galactic_trader.products import Product
 
 @pytest.fixture
 def engine() -> EconomyEngine:
-    return EconomyEngine()
+    return EconomyEngine(
+        random_seed=42,
+        event_probability=0,
+    )
 
 
 def test_engine_creates_market_for_every_product(engine: EconomyEngine) -> None:
