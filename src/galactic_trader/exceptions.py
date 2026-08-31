@@ -23,3 +23,7 @@ class NotProducibleException(GameException):
 
 class UnknownShipModelException(GameException):
     """Report that no spaceship model has the requested model ID."""
+
+
+class ShipNotOwnedException(GameException):
+    """Report that the player does not own the requested spaceship."""
