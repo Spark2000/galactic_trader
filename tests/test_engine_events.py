@@ -16,9 +16,9 @@ def test_tick_uses_small_random_multiplier_for_periodic_trend() -> None:
     starting_price = market.current_price
     base_trend = engine.current_market_trend
 
-    event = engine.tick()
+    result = engine.tick()
 
-    assert event is None
+    assert result.market_event is None
     assert TREND_MULTIPLIER_MIN <= engine.last_trend_multiplier
     assert engine.last_trend_multiplier <= TREND_MULTIPLIER_MAX
     assert engine.last_effective_market_trend == pytest.approx(
@@ -33,11 +33,11 @@ def test_same_seed_reproduces_trends_events_and_prices() -> None:
     first = EconomyEngine(random_seed=123, event_probability=1)
     second = EconomyEngine(random_seed=123, event_probability=1)
 
-    first_event = first.tick()
-    second_event = second.tick()
+    first_res = first.tick()
+    second_res = second.tick()
 
     assert first.last_trend_multiplier == second.last_trend_multiplier
-    assert first_event == second_event
+    assert first_res == second_res
     assert {
         product: market.current_price for product, market in first.markets.items()
     } == {product: market.current_price for product, market in second.markets.items()}
@@ -46,20 +46,20 @@ def test_same_seed_reproduces_trends_events_and_prices() -> None:
 def test_event_probability_zero_keeps_round_free_of_events() -> None:
     engine = EconomyEngine(random_seed=7, event_probability=0)
 
-    event = engine.tick()
+    result = engine.tick()
 
-    assert event is None
+    assert result.market_event is None
     assert engine.last_market_event is None
 
 
 def test_event_probability_one_triggers_and_stores_event() -> None:
     engine = EconomyEngine(random_seed=7, event_probability=1)
 
-    event = engine.tick()
+    result = engine.tick()
 
-    assert event is not None
-    assert engine.last_market_event == event
-    assert event.message
+    assert result.market_event is not None
+    assert engine.last_market_event == result.market_event
+    assert result.market_event.message
 
 
 @pytest.mark.parametrize("probability", [-0.01, 1.01])

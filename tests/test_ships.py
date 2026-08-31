@@ -22,6 +22,7 @@ def test_model_ids_and_display_names_are_unique() -> None:
     assert len(model_ids) == len(set(model_ids))
     assert len(display_names) == len(set(display_names))
 
+
 def test_get_ship_model_accepts_normalized_user_input() -> None:
     model = get_ship_model("  ATLAS_RUNNER  ")
 
@@ -50,6 +51,7 @@ def test_ship_only_accepts_its_own_cargo_type() -> None:
         ("cargo_capacity", 0),
         ("speed_rating", -1),
         ("speed_rating", 101),
+        ("speed_rating", 0),
         ("defense_rating", -1),
         ("defense_rating", 101),
         ("purchase_price", 0),
@@ -72,3 +74,12 @@ def test_ship_model_rejects_invalid_values(
 
     with pytest.raises(ValueError):
         ShipModel(**values)  # type: ignore[arg-type]
+
+
+def test_calculate_travel_rounds_uses_round_trip_and_rounds_up() -> None:
+    model = get_ship_model("standard_s_1")
+
+    assert Product.WOOD.distance == 45
+    assert model.speed_rating == 90
+    assert model.calculate_travel_rounds(Product.WOOD) == 1
+    assert model.calculate_travel_rounds(Product.GEMS) == 3

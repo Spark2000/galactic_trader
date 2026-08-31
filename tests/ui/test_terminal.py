@@ -5,7 +5,7 @@ import pytest
 from galactic_trader.engine import EconomyEngine
 from galactic_trader.production import PRODUCTION_RECIPES
 from galactic_trader.products import Product
-from galactic_trader.ui.terminal import TerminalUI, ParsedCommand
+from galactic_trader.ui.terminal import ParsedCommand, TerminalUI
 
 
 @pytest.fixture

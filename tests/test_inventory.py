@@ -12,37 +12,47 @@ from galactic_trader.production import PRODUCTION_RECIPES
 from galactic_trader.products import Product
 
 
-def test_buying_reduces_money_and_increases_stock() -> None:
-    inv = Inventory(money=100.0)
+def test_payment_updates_money() -> None:
+    inventory = Inventory(money=100.0)
 
-    inv.execute_trade(product=Product.FOOD, quantity=2, unit_price=10.0)
+    inventory.pay(25.0)
 
-    assert inv.money == 80.0
-    assert inv.stock[Product.FOOD] == 2
+    assert inventory.money == pytest.approx(75.0)
+
+def test_credit_updates_money() -> None:
+    inventory = Inventory(money=100.0)
+
+    inventory.credit(10.0)
+
+    assert inventory.money == pytest.approx(110.0)
 
 
-def test_buying_without_enough_money() -> None:
-    inv = Inventory(money=2.0)
+def test_payment_without_enough_money_is_rejected() -> None:
+    inventory = Inventory(money=5.0)
 
     with pytest.raises(NotEnoughMoneyException):
-        inv.execute_trade(product=Product.FOOD, quantity=1, unit_price=10.0)
+        inventory.pay(10.0)
+
+    assert inventory.money == 5.0
 
 
-def test_selling_increases_money_and_reduces_stock() -> None:
-    inv = Inventory(money=100.0)
-    inv.stock[Product.FOOD] = 3
+def test_sale_increases_money_and_reduces_stock() -> None:
+    inventory = Inventory(money=100.0, stock={Product.WOOD: 3})
 
-    inv.execute_trade(product=Product.FOOD, quantity=-2, unit_price=10.0)
+    inventory.execute_sale(Product.WOOD, quantity=2, unit_price=8.0)
 
-    assert inv.money == 120.0
-    assert inv.stock[Product.FOOD] == 1
+    assert inventory.money == pytest.approx(100.0 + (2 * Product.WOOD.starting_price))
+    assert inventory.stock[Product.WOOD] == 1
 
 
-def test_selling_without_enough_stock() -> None:
-    inv = Inventory(money=100.0)
+def test_sale_without_stock_is_rejected() -> None:
+    inventory = Inventory(money=100.0)
 
     with pytest.raises(NotEnoughStockException):
-        inv.execute_trade(product=Product.FOOD, quantity=-1, unit_price=10.0)
+        inventory.execute_sale(Product.WOOD, quantity=1, unit_price=8.0)
+
+    assert inventory.money == 100.0
+    assert inventory.stock == {}
 
 
 @pytest.mark.parametrize(
@@ -53,13 +63,13 @@ def test_selling_without_enough_stock() -> None:
         (1, -1.0),
     ],
 )
-def test_trade_rejects_invalid_contract_values(
+def test_sell_rejects_invalid_values(
     quantity: int, unit_price: float
 ) -> None:
     inventory = Inventory(money=100.0)
 
-    with pytest.raises(AssertionError):
-        inventory.execute_trade(Product.FOOD, quantity, unit_price)
+    with pytest.raises(ValueError):
+        inventory.execute_sale(Product.FOOD, quantity, unit_price)
 
 
 def test_production_consumes_scaled_resources() -> None:

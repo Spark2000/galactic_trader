@@ -6,14 +6,16 @@ from galactic_trader.engine import EconomyEngine
 from galactic_trader.exceptions import NotEnoughMoneyException, NotProducibleException
 from galactic_trader.production import PRODUCTION_RECIPES
 from galactic_trader.products import Product
+from galactic_trader.ships import get_ship_model
 
 
 @pytest.fixture
 def engine() -> EconomyEngine:
-    return EconomyEngine(
-        random_seed=42,
-        event_probability=0,
-    )
+    """Creates a deterministic engine without random market events."""
+    result = EconomyEngine(random_seed=42, event_probability=0)
+    result.player.money = 10_000.0
+    result.fleet.add_ship(get_ship_model("standard_s_1"))
+    return result
 
 
 def test_engine_creates_market_for_every_product(engine: EconomyEngine) -> None:
@@ -27,25 +29,21 @@ def test_markets_use_product_starting_values(engine: EconomyEngine) -> None:
     assert food_market.volatility == Product.FOOD.starting_volatility
 
 
-def test_trade_buy_does_not_change_price_before_next_round(
-    engine: EconomyEngine,
-) -> None:
-    starting_price = engine.markets[Product.FOOD].current_price
+def test_buy_does_not_change_price_before_next_round(engine: EconomyEngine) -> None:
+    starting_price = engine.markets[Product.WOOD].current_price
 
-    engine.interact_with_market(is_buy=True, product=Product.FOOD, quantity=1)
+    engine.buy_product(Product.WOOD, quantity=1, ship_id=1)
 
-    assert engine.markets[Product.FOOD].current_price == starting_price
+    assert engine.markets[Product.WOOD].current_price == starting_price
 
 
-def test_trade_sell_does_not_change_price_before_next_round(
-    engine: EconomyEngine,
-) -> None:
-    engine.player.stock[Product.FOOD] = 1
-    starting_price = engine.markets[Product.FOOD].current_price
+def test_sell_does_not_change_price_before_next_round(engine: EconomyEngine) -> None:
+    engine.player.stock[Product.WOOD] = 1
+    starting_price = engine.markets[Product.WOOD].current_price
 
-    engine.interact_with_market(is_buy=False, product=Product.FOOD, quantity=1)
+    engine.sell_product(Product.WOOD, quantity=1)
 
-    assert engine.markets[Product.FOOD].current_price == starting_price
+    assert engine.markets[Product.WOOD].current_price == starting_price
 
 
 def test_failed_trade_does_not_change_price_before_next_round(
@@ -54,17 +52,17 @@ def test_failed_trade_does_not_change_price_before_next_round(
     engine.player.money = 0.0
 
     with pytest.raises(NotEnoughMoneyException):
-        engine.interact_with_market(is_buy=True, product=Product.FOOD, quantity=1)
+        engine.buy_product(product=Product.WOOD, quantity=1, ship_id=1)
 
-    assert engine.pending_price_directions[Product.FOOD] == 0
+    assert engine.pending_price_directions[Product.WOOD] == 0
     assert engine.history == []
 
 
 def test_tick_applies_pending_trade_and_market_trend(engine: EconomyEngine) -> None:
-    market = engine.markets[Product.FOOD]
+    market = engine.markets[Product.WOOD]
     starting_price = market.current_price
     volatility = market.volatility
-    engine.interact_with_market(is_buy=True, product=Product.FOOD, quantity=1)
+    engine.buy_product(product=Product.WOOD, quantity=1, ship_id=1)
 
     engine.tick()
 
@@ -82,7 +80,7 @@ def test_trade_quantity_scales_pending_price_effect(engine: EconomyEngine) -> No
     market = engine.markets[product]
     starting_price = market.current_price
 
-    engine.interact_with_market(is_buy=True, product=product, quantity=quantity)
+    engine.buy_product(product=product, quantity=quantity, ship_id=1)
     engine.tick()
 
     expected_price = round(
@@ -95,7 +93,7 @@ def test_trade_quantity_scales_pending_price_effect(engine: EconomyEngine) -> No
 
 
 def test_tick_resets_pending_trade_effect(engine: EconomyEngine) -> None:
-    engine.interact_with_market(is_buy=True, product=Product.FOOD, quantity=1)
+    engine.buy_product(Product.WOOD, quantity=1, ship_id=1)
 
     engine.tick()
 

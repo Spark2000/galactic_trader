@@ -161,7 +161,7 @@ class EconomyEngine:
             raise ValueError("Quantity must be greater than zero.")
 
         unit_price = self.markets[product].current_price
-        self.player.execute_sale(product, -quantity, unit_price)
+        self.player.execute_sale(product, quantity, unit_price)
         self.pending_price_directions[product] -= quantity
         self.history.append(("SELL", str(product), quantity, unit_price))
         return "SELL", unit_price
