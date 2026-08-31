@@ -3,13 +3,9 @@ name = "galactic-trader"
 version = "0.1.0"
 description = "A turn-based space trading game"
 readme = "README.md"
-authors = [
-    { name = "Spark2000", email = "paulalex.wetzel@gmail.com" }
-]
+authors = [{ name = "Spark2000", email = "paulalex.wetzel@gmail.com" }]
 requires-python = ">=3.14"
-dependencies = [
-    "pygame-ce>=2.5,<3",
-]
+dependencies = ["pygame-ce>=2.5,<3"]
 
 [project.scripts]
 galactic-trader = "galactic_trader.__main__:main"
@@ -38,19 +34,16 @@ addopts = """
 --cov-branch
 --cov-report=term-missing
 """
-testpaths = [
-    "tests",
-    "src/galactic_trader",
-]
+testpaths = ["tests", "src/galactic_trader"]
 
 [tool.mypy]
 python_version = "3.14"
-files = [
-    "src/galactic_trader",
-    "tests",
-]
+files = ["src/galactic_trader", "tests"]
 strict = true
 warn_unreachable = true
 warn_unused_configs = true
 pretty = true
 show_error_codes = true
+
+[tool.interrogate]
+exclude = ["tests"]
