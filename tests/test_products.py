@@ -44,3 +44,23 @@ def test_product_exposes_its_information() -> None:
 
 def test_product_string_uses_display_name() -> None:
     assert str(Product.FURNITURE) == Product.FURNITURE.display_name
+
+
+def test_every_product_has_exactly_one_planet() -> None:
+    """Every product references one member of the Planet enum."""
+    for product in Product:
+        assert isinstance(product.planet, Planet)
+
+
+def test_related_products_can_share_an_origin_planet() -> None:
+    """Products from the same economy may reference the same planet."""
+    assert Product.FOOD.planet is Planet.ALDERAAN
+    assert Product.WOOD.planet is Planet.ENDOR
+    assert Product.ORE.planet is Planet.KESSEL
+    assert Product.METAL.planet is Planet.KESSEL
+
+
+def test_product_distance_is_forwarded_from_planet() -> None:
+    """The compatibility property always reflects the planet distance."""
+    for product in Product:
+        assert product.distance == product.planet.distance

@@ -9,6 +9,7 @@ from galactic_trader.exceptions import (
     NotEnoughMoneyException,
     ShipInTransitException,
 )
+from galactic_trader.planets import Planet
 from galactic_trader.products import Product
 from galactic_trader.ships import get_ship_model
 
@@ -39,7 +40,9 @@ def test_purchase_deducts_money_but_does_not_fill_stock(
     purchase = engine.buy_product(product=product, quantity=quantity, ship_id=ship_id)
 
     assert purchase.total_cost == pytest.approx(market.current_price * quantity)
-    assert engine.player.money == pytest.approx(starting_money - (market.current_price * quantity))
+    assert engine.player.money == pytest.approx(
+        starting_money - (market.current_price * quantity)
+    )
     assert engine.player.stock.get(product, 0) == 0
     ship = engine.fleet.get_ship(ship_id)
     assert ship.active_transport is not None
@@ -172,9 +175,7 @@ def test_product_price_waits_for_tick_after_transport_purchase(
     assert market.current_price == starting_price
     engine.tick()
     expected_price = round(
-        starting_price
-        + 2 * market.volatility
-        + engine.last_effective_market_trend,
+        starting_price + 2 * market.volatility + engine.last_effective_market_trend,
         2,
     )
     assert market.current_price == pytest.approx(expected_price)
@@ -202,6 +203,53 @@ def test_selling_products_changes_stock_immediately(
 
     assert action == "SELL"
     assert engine.player.stock[Product.WOOD] == 1
-    assert engine.player.money == pytest.approx(
-        starting_money + 2 * unit_price
+    assert engine.player.money == pytest.approx(starting_money + 2 * unit_price)
+
+
+def test_transport_option_uses_product_planet_distance() -> None:
+    """The engine calculates transport time from the origin planet."""
+    engine = EconomyEngine(random_seed=1, event_probability=0)
+    ship = engine.fleet.add_ship(get_ship_model("standard_s_1"))
+
+    options = engine.get_transport_options(Product.GEMS, quantity=2)
+
+    assert len(options) == 1
+    assert options[0].ship_id == ship.ship_id
+    assert options[0].travel_rounds == 2
+    assert Product.GEMS.planet is Planet.KESSEL
+
+
+def test_purchase_and_delivery_use_planet_based_travel_time() -> None:
+    """Goods arrive after the complete round trip to their planet."""
+    engine = EconomyEngine(
+        random_seed=1,
+        event_probability=0,
     )
+    ship = engine.fleet.add_ship(
+        get_ship_model("standard_s_1")
+    )
+
+    purchase = engine.buy_product(
+        Product.GEMS,
+        quantity=2,
+        ship_id=ship.ship_id,
+    )
+
+    assert purchase.travel_rounds == 2
+    assert engine.player.stock.get(Product.GEMS, 0) == 0
+
+    for _ in range(purchase.travel_rounds - 1):
+        result = engine.tick()
+
+        assert result.completed_deliveries == ()
+        assert engine.player.stock.get(Product.GEMS, 0) == 0
+
+    result = engine.tick()
+
+    assert engine.player.stock[Product.GEMS] == 2
+    assert len(result.completed_deliveries) == 1
+
+    delivery = result.completed_deliveries[0]
+    assert delivery.product is Product.GEMS
+    assert delivery.quantity == 2
+    assert delivery.ship_id == ship.ship_id

@@ -87,3 +87,31 @@ def test_calculate_travel_rounds_uses_round_trip_and_rounds_up() -> None:
 
     assert model.calculate_travel_rounds_to(Planet.ENDOR) == 1
     assert model.calculate_travel_rounds_to(Planet.KESSEL) == 2
+
+
+@pytest.mark.parametrize(
+    ("planet", "expected_rounds"),
+    [
+        (Planet.ALDERAAN, 1),
+        (Planet.KESSEL, 2),
+        (Planet.CORUSCANT, 3),
+        (Planet.GEONOSIS, 4),
+    ],
+)
+def test_calculate_travel_rounds_to_planet(
+    planet: Planet,
+    expected_rounds: int,
+) -> None:
+    """Round-trip distance is divided by speed and rounded upward."""
+    model = get_ship_model("standard_s_1")
+
+    assert model.calculate_travel_rounds_to(planet) == expected_rounds
+
+
+def test_comatibility_of_old_product_based_travel_method() -> None:
+    """The transition helper delegates through the product's planet."""
+    model = get_ship_model("standard_s_1")
+
+    assert model.calculate_travel_rounds(Product.GEMS) == (
+        model.calculate_travel_rounds_to(Product.GEMS.planet)
+    )
