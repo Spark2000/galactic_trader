@@ -92,7 +92,7 @@ class EconomyEngine:
                 ship_id=ship.ship_id,
                 ship_name=ship.model.display_name,
                 cargo_capacity=ship.model.cargo_capacity,
-                travel_rounds=ship.model.calculate_travel_rounds(product),
+                travel_rounds=ship.model.calculate_travel_rounds_to(product.planet),
             )
             for ship in available_ships
         )
@@ -100,7 +100,7 @@ class EconomyEngine:
     def buy_product(
         self, product: Product, quantity: int, ship_id: int
     ) -> ProductPurchase:
-        """Buys products and start their collection with an owned ship."""
+        """Buys products and starts their collection with an owned ship."""
         if quantity <= 0:
             raise ValueError("Quantity must be greater than zero.")
 
@@ -114,7 +114,7 @@ class EconomyEngine:
                 f"Need {total_cost:.2f} Credits, have {self.player.money:.2f} Credits."
             )
 
-        travel_rounds = ship.model.calculate_travel_rounds(product)
+        travel_rounds = ship.model.calculate_travel_rounds_to(product.planet)
         mission = TransportMission(
             product=product,
             quantity=quantity,

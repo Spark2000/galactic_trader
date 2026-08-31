@@ -161,7 +161,8 @@ class TerminalUI:
 
         for m in self.engine.markets.values():
             print(
-                f"- {m.product} @ {m.current_price:.2f} Credits ({m.product.cargo_type})"
+                f"- {m.product} @ {m.current_price:.2f} Credits ({m.product.cargo_type}) "
+                f"| Origin: {m.product.planet} (Dist.: {m.product.planet.distance})"
             )
 
     def render_production_recipes(self) -> None:
@@ -206,7 +207,8 @@ class TerminalUI:
             else:
                 mission = owned_ship.active_transport
                 status = (
-                    f"In transit: {mission.quantity} {mission.product}, "
+                    f"In transit from {mission.product.planet}: "
+                    f"{mission.quantity} {mission.product}, "
                     f"{mission.remaining_rounds}/{mission.total_rounds} "
                     "rounds remaining"
                 )
@@ -273,6 +275,10 @@ class TerminalUI:
                         )
                         continue
 
+                    print(
+                        f"\nTRANSPORT TO {cmd.product.planet} "
+                        f"(Dist.: {cmd.product.planet.distance})"
+                    )
                     ship_id = self.select_transport_ship(options)
                     if ship_id is None:
                         print("\n[!] Purchase cancelled.\n")
@@ -288,7 +294,8 @@ class TerminalUI:
                         f"{purchase.product} @ "
                         f"{purchase.unit_price:.2f} Credits.\n"
                         f"[TRANSPORT] {purchase.ship_name} "
-                        f"(ID: #{purchase.ship_id}) returns in "
+                        f"(ID: #{purchase.ship_id}) returns from "
+                        f"{purchase.product.planet} in "
                         f"{purchase.travel_rounds} round(s).\n"
                     )
                 elif cmd.action == "s":

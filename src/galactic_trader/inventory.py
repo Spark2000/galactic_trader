@@ -41,8 +41,8 @@ class Inventory:
         unit_price: float,
     ) -> None:
         """Executes an immediate stock sale."""
-        if quantity == 0:
-            raise ValueError("Trade quantity must not be zero.")
+        if quantity <= 0:
+            raise ValueError("Sale quantity must be greater than zero.")
         if unit_price <= 0:
             raise ValueError("Unit price must be greater than zero.")
 

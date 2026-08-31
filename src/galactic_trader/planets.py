@@ -33,7 +33,7 @@ class Planet(Enum):
     )
     ALDERAAN = PlanetInfo(
         display_name="Alderaan",
-        description="A fertile agricultural world especially known for it's expensive wines.",
+        description="A fertile agricultural world especially known for its expensive wines.",
         distance=35,
     )
     KESSEL = PlanetInfo(
@@ -48,17 +48,17 @@ class Planet(Enum):
     )
     KAMINO = PlanetInfo(
         display_name="Kamino",
-        description="A cold research world known for it's outstanding scientists and medical laboratories.",
+        description="A cold research world known for its outstanding scientists and medical laboratories.",
         distance=80,
     )
     CORUSCANT = PlanetInfo(
         display_name="Coruscant",
-        description="A wealthy planet famous for it's luxury goods. Located in the galaxies center region.",
+        description="A wealthy planet famous for its luxury goods. It is located in the galaxy's central region.",
         distance=100,
     )
     KUAT = PlanetInfo(
         display_name="Kuat",
-        description="A densely automated center of advanced manufacturing. Known for it's excellent shipyards.",
+        description="A densely automated center of advanced manufacturing. Known for its excellent shipyards.",
         distance=125,
     )
     GEONOSIS = PlanetInfo(

@@ -38,7 +38,7 @@ def test_product_exposes_its_information() -> None:
     assert Product.FOOD.display_name == Product.FOOD.value.display_name
     assert Product.FOOD.starting_price == Product.FOOD.value.starting_price
     assert Product.FOOD.starting_volatility == Product.FOOD.value.starting_volatility
-    assert Product.FOOD.distance == Product.FOOD.value.distance
+    assert Product.FOOD.distance == Product.FOOD.value.planet.distance
 
 
 def test_product_string_uses_display_name() -> None:

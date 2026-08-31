@@ -6,6 +6,7 @@ from typing import Final
 
 from galactic_trader.cargo import CargoType
 from galactic_trader.exceptions import UnknownShipModelException
+from galactic_trader.planets import Planet
 from galactic_trader.products import Product
 
 
@@ -41,15 +42,19 @@ class ShipModel:
             raise ValueError("Purchase price must be greater than 0.")
 
     def can_transport(self, product: Product) -> bool:
-        """Return whether this model can transport a product."""
+        """Returns whether this model can transport a product."""
         return self.cargo_type is product.cargo_type
 
+    def calculate_travel_rounds_to(self, planet: Planet) -> int:
+        """Returns the rounded-up duration of a round trip to a planet."""
+        return max(1, ceil((2 * planet.distance) / self.speed_rating))
+
     def calculate_travel_rounds(self, product: Product) -> int:
-        """Return the rounded-up duration of a collection round trip."""
-        return max(1, ceil((2 * product.distance) / self.speed_rating))
+        """Returns the travel duration for a product's origin planet. (COMPATIBILITY)"""
+        return self.calculate_travel_rounds_to(product.planet)
 
     def __str__(self) -> str:
-        """Return the user-facing spaceship model name."""
+        """Returns the user-facing spaceship model name."""
         return self.display_name
 
 
@@ -167,6 +172,15 @@ SHIP_MODELS: Final[tuple[ShipModel, ...]] = (
         purchase_price=1750.0,
     ),
     # specialized models:
+    ShipModel(
+        model_id="falcon",
+        display_name="Millennium Falcon",
+        cargo_type=CargoType.STANDARD,
+        cargo_capacity=15,
+        speed_rating=100,
+        defense_rating=50,
+        purchase_price=800.0,
+    ),
     ShipModel(
         model_id="atlas_runner",
         display_name="Atlas Runner",
