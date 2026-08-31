@@ -19,6 +19,7 @@ def test_payment_updates_money() -> None:
 
     assert inventory.money == pytest.approx(75.0)
 
+
 def test_credit_updates_money() -> None:
     inventory = Inventory(money=100.0)
 
@@ -63,9 +64,7 @@ def test_sale_without_stock_is_rejected() -> None:
         (1, -1.0),
     ],
 )
-def test_sell_rejects_invalid_values(
-    quantity: int, unit_price: float
-) -> None:
+def test_sell_rejects_invalid_values(quantity: int, unit_price: float) -> None:
     inventory = Inventory(money=100.0)
 
     with pytest.raises(ValueError):
@@ -135,3 +134,42 @@ def test_inventory_string_hides_zero_stock() -> None:
     )
 
     assert str(inventory) == "[Money: 12.50 Credits | Stock: Wood: 2]"
+
+
+def test_execute_production_applies_cost_multiplier() -> None:
+    """A multiplier changes credits but not required material quantities."""
+    inventory = Inventory(
+        money=10.0,
+        stock={Product.ORE: 2},
+    )
+
+    total_cost = inventory.execute_production(
+        product=Product.METAL,
+        quantity=1,
+        recipe=PRODUCTION_RECIPES[Product.METAL],
+        cost_multiplier=0.75,
+    )
+
+    assert total_cost == pytest.approx(1.50)
+    assert inventory.money == pytest.approx(8.50)
+    assert inventory.stock[Product.ORE] == 0
+    assert inventory.stock[Product.METAL] == 1
+
+
+@pytest.mark.parametrize("multiplier", [0, -0.1, 1.1])
+def test_execute_production_rejects_invalid_cost_multiplier(
+    multiplier: float,
+) -> None:
+    """Production accepts only positive non-increasing cost multipliers."""
+    inventory = Inventory(
+        money=10.0,
+        stock={Product.ORE: 2},
+    )
+
+    with pytest.raises(ValueError, match="cost multiplier"):
+        inventory.execute_production(
+            product=Product.METAL,
+            quantity=1,
+            recipe=PRODUCTION_RECIPES[Product.METAL],
+            cost_multiplier=multiplier,
+        )
