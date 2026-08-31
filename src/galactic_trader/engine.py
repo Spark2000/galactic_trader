@@ -1,6 +1,7 @@
 """Coordinates markets, player actions, transports and round progression."""
 
 from dataclasses import dataclass
+from math import isfinite
 from random import Random
 from typing import Final
 
@@ -61,11 +62,14 @@ class EconomyEngine:
     def __init__(
         self,
         *,
+        starting_money: float = 100.0,
         random_seed: int | None = None,
         event_probability: float = DEFAULT_EVENT_PROBABILITY,
         pirate_attack_probability: float = DEFAULT_PIRATE_ATTACK_PROBABILITY,
     ) -> None:
         """Initializes engine state."""
+        if not isfinite(starting_money) or starting_money < 0:
+                raise ValueError("Starting money must be a finite, non-negative number.")
         if not 0 <= event_probability <= 1:
             raise ValueError("Event probability must be between zero and one.")
         if not 0 <= pirate_attack_probability <= 1:
@@ -74,7 +78,7 @@ class EconomyEngine:
         self._random = Random(random_seed)
         self.round_number = 1
 
-        self.player = Inventory(money=100.0)
+        self.player = Inventory(money=round(starting_money, 2))
         self.fleet = Fleet()
         self.investments = InvestmentPortfolio()
         self.markets: dict[Product, Market] = {
