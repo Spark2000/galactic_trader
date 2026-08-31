@@ -1,9 +1,11 @@
 """Terminal-based user interface for Galactic Trader."""
 
+from galactic_trader.cargo import CargoType
 from galactic_trader.engine import EconomyEngine
 from galactic_trader.exceptions import GameException
 from galactic_trader.production import PRODUCTION_RECIPES
 from galactic_trader.products import Product
+from galactic_trader.ships import get_ship_models
 
 
 class TerminalUI:
@@ -21,6 +23,12 @@ class TerminalUI:
             raise ValueError("Input cannot be empty.")
 
         command = parts[0].lower()
+
+        if command == "help":
+            if len(parts) == 2 and parts[1].lower() == "ships":
+                return "help_ships", None, 0
+            raise ValueError("Expected 'help ships'.")
+
         if command in {"n", "q"}:
             if len(parts) != 1:
                 raise ValueError(f"Command '{command}' takes no arguments.")
@@ -73,6 +81,7 @@ class TerminalUI:
             "- sell: 's <product> <amount>'\n"
             "- next round: 'n'"
             "- quit: 'q'"
+            "- ship infos: 'help ships'"
         )
 
     def render_products(self) -> None:
@@ -80,7 +89,9 @@ class TerminalUI:
         print("MARKET:")
 
         for m in self.engine.markets.values():
-            print(f"- {m.product} @ {m.current_price:.2f} Credits ({m.product.cargo_type})")
+            print(
+                f"- {m.product} @ {m.current_price:.2f} Credits ({m.product.cargo_type})"
+            )
 
     def render_production_recipes(self) -> None:
         """Displays all available production recipes."""
@@ -93,6 +104,22 @@ class TerminalUI:
             print(
                 f"- {product}: {recipe.cost:.2f} Credits | Materials: {materials_display}"
             )
+
+    def render_ship_models(self) -> None:
+        """Display all spaceship models grouped by supported cargo type."""
+        print("SPACESHIP MODELS:")
+
+        for cargo_type in CargoType:
+            print(f"\n{cargo_type}:")
+
+            for model in get_ship_models(cargo_type):
+                print(
+                    f"- {model.display_name} "
+                    f"| Capacity: {model.cargo_capacity} "
+                    f"| Speed: {model.speed_rating} "
+                    f"| Defense: {model.defense_rating} "
+                    f"| Price: {model.purchase_price:.2f} Credits"
+                )
 
     def run(self) -> None:
         """Game loop for terminal ui."""
@@ -113,6 +140,9 @@ class TerminalUI:
                         print("[EVENT] No market event this round.")
                     else:
                         print(f"[EVENT] {event.message}")
+                    continue
+                if cmd == "help_ships":
+                    self.render_ship_models()
                     continue
 
                 assert product is not None
