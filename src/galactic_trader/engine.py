@@ -1,6 +1,7 @@
-"""Coordinates markets, player actions and round progression."""
+"""Coordinates markets, player actions, transports and round progression."""
 
 from collections.abc import Iterator
+from dataclasses import dataclass
 from itertools import cycle
 from random import Random
 from typing import Final
@@ -10,17 +11,37 @@ from galactic_trader.events import (
     EventOccurrence,
     choose_market_event,
 )
-from galactic_trader.exceptions import NotEnoughMoneyException, NotProducibleException
+from galactic_trader.exceptions import (
+    IncompatibleCargoException,
+    NotEnoughCargoCapacityException,
+    NotEnoughMoneyException,
+    NotProducibleException,
+    ShipInTransitException,
+)
 from galactic_trader.fleet import Fleet, OwnedShip
 from galactic_trader.inventory import Inventory
 from galactic_trader.market import Market
 from galactic_trader.production import PRODUCTION_RECIPES
 from galactic_trader.products import Product
 from galactic_trader.ships import get_ship_model
+from galactic_trader.transport import (
+    CompletedDelivery,
+    ProductPurchase,
+    TransportMission,
+    TransportOption,
+)
 
 TREND_MULTIPLIER_MIN: Final[float] = 0.90
 TREND_MULTIPLIER_MAX: Final[float] = 1.10
 SHIP_RESALE_RATE: Final[float] = 0.70
+
+
+@dataclass(frozen=True)
+class RoundResult:
+    """Contains the market event and deliveries completed during one tick."""
+
+    market_event: EventOccurrence | None
+    completed_deliveries: tuple[CompletedDelivery, ...]
 
 
 class EconomyEngine:
@@ -61,41 +82,113 @@ class EconomyEngine:
         self.event_probability = event_probability
         self.last_market_event: EventOccurrence | None = None
 
+    def get_transport_options(
+        self, product: Product, quantity: int
+    ) -> tuple[TransportOption, ...]:
+        """Returns all ships able to collect a planned product purchase."""
+        available_ships = self.fleet.get_available_ships(product, quantity)
+        return tuple(
+            TransportOption(
+                ship_id=ship.ship_id,
+                ship_name=ship.model.display_name,
+                cargo_capacity=ship.model.cargo_capacity,
+                travel_rounds=ship.model.calculate_travel_rounds(product),
+            )
+            for ship in available_ships
+        )
+
+    def buy_product(
+        self, product: Product, quantity: int, ship_id: int
+    ) -> ProductPurchase:
+        """Buys products and start their collection with an owned ship."""
+        if quantity <= 0:
+            raise ValueError("Quantity must be greater than zero.")
+
+        ship = self.fleet.get_ship(ship_id)
+        self._validate_transport_ship(ship, product, quantity)
+
+        unit_price = self.markets[product].current_price
+        total_cost = round(unit_price * quantity, 2)
+        if self.player.money < total_cost:
+            raise NotEnoughMoneyException(
+                f"Need {total_cost:.2f} Credits, have {self.player.money:.2f} Credits."
+            )
+
+        travel_rounds = ship.model.calculate_travel_rounds(product)
+        mission = TransportMission(
+            product=product,
+            quantity=quantity,
+            total_rounds=travel_rounds,
+            remaining_rounds=travel_rounds,
+        )
+
+        ship.start_transport(mission)
+        self.player.pay(total_cost)
+        self.pending_price_directions[product] += quantity
+        self.history.append(("BUY", str(product), quantity, unit_price))
+
+        return ProductPurchase(
+            product=product,
+            quantity=quantity,
+            ship_id=ship.ship_id,
+            ship_name=ship.model.display_name,
+            unit_price=unit_price,
+            total_cost=total_cost,
+            travel_rounds=travel_rounds,
+        )
+
+    @staticmethod
+    def _validate_transport_ship(
+        ship: OwnedShip, product: Product, quantity: int
+    ) -> None:
+        """Validates a selected ship without changing game state."""
+        if not ship.is_available:
+            raise ShipInTransitException(f"{ship} is already in transit.")
+        if not ship.model.can_transport(product):
+            raise IncompatibleCargoException(
+                f"{ship} carries {ship.model.cargo_type}, "
+                f"but {product} requires {product.cargo_type}."
+            )
+        if ship.model.cargo_capacity < quantity:
+            raise NotEnoughCargoCapacityException(
+                f"{ship} has capacity {ship.model.cargo_capacity}, "
+                f"but the purchase contains {quantity} units."
+            )
+
+    def sell_product(self, product: Product, quantity: int) -> tuple[str, float]:
+        """Sells stocked products immediately and queues their market effect."""
+        if quantity <= 0:
+            raise ValueError("Quantity must be greater than zero.")
+
+        unit_price = self.markets[product].current_price
+        self.player.execute_sale(product, -quantity, unit_price)
+        self.pending_price_directions[product] -= quantity
+        self.history.append(("SELL", str(product), quantity, unit_price))
+        return "SELL", unit_price
+
     def interact_with_market(
-        self, is_buy: bool, product: Product, quantity: int
+        self,
+        is_buy: bool,
+        product: Product,
+        quantity: int,
+        *,
+        ship_id: int | None = None,
     ) -> tuple[str, float]:
-        """
-        Executes the trade logic.
-        Returns details of the transaction (Action Name, Transaction Price)
-        or raises an exception.
-        """
-        assert quantity > 0
-
-        market = self.markets[product]
-        transaction_price = market.current_price
-        # Buying -> positive quantity, Selling -> negative quantity
-        signed_qty = quantity if is_buy else -quantity
-
-        # 1. Execute logic (Raises exceptions if invalid)
-        self.player.execute_trade(market.product, signed_qty, transaction_price)
-
-        # 2. Update History
-        action_name = "BUY" if is_buy else "SELL"
-        self.history.append((action_name, str(product), quantity, transaction_price))
-
-        # 3. Update Market Price (Supply/Demand)
-        # +1 direction for Buy, -1 for Sell
-        direction = 1 if is_buy else -1
-        self.pending_price_directions[product] += direction * quantity
-
-        return action_name, transaction_price
+        """Provides compatibility while routing trades through the new methods."""
+        if is_buy:
+            if ship_id is None:
+                raise ValueError("Buying products requires a spaceship ID.")
+            purchase = self.buy_product(product, quantity, ship_id)
+            return "BUY", purchase.unit_price
+        return self.sell_product(product, quantity)
 
     def produce_product(self, product: Product, quantity: int) -> tuple[str, float]:
         """
         Produces a product if the product has a recipe.
         Return Action name and sum of cost or throws an exception.
         """
-        assert quantity > 0
+        if quantity <= 0:
+            raise ValueError("Quantity must be greater than zero.")
 
         recipe = PRODUCTION_RECIPES.get(product)
 
@@ -118,13 +211,7 @@ class EconomyEngine:
         model = get_ship_model(model_id)
         purchase_price = model.purchase_price
 
-        if self.player.money < purchase_price:
-            raise NotEnoughMoneyException(
-                f"Need {purchase_price:.2f} Credits, "
-                f"have {self.player.money:.2f} Credits."
-            )
-
-        self.player.money -= purchase_price
+        self.player.pay(purchase_price)
         purchased_ship = self.fleet.add_ship(model)
         self.history.append(
             (
@@ -145,7 +232,7 @@ class EconomyEngine:
         )
 
         self.fleet.remove_ship(ship_id)
-        self.player.money += sale_price
+        self.player.credit(sale_price)
         self.history.append(
             (
                 "SELL_SHIP",
@@ -156,8 +243,8 @@ class EconomyEngine:
         )
         return owned_ship, sale_price
 
-    def tick(self) -> EventOccurrence | None:
-        """Advances the simulation by one round and applies all pending price changes."""
+    def tick(self) -> RoundResult:
+        """Advance one round and apply prices, events, and transports."""
         self.last_trend_multiplier = self._random.uniform(
             TREND_MULTIPLIER_MIN, TREND_MULTIPLIER_MAX
         )
@@ -177,6 +264,28 @@ class EconomyEngine:
         else:
             self.last_market_event = selected_event.apply(self.markets, self._random)
 
+        completed_deliveries: list[CompletedDelivery] = []
+        for ship in self.fleet.ships:
+            completed_transport = ship.advance_transport()
+            if completed_transport is None:
+                continue
+
+            self.player.adjust_stock(
+                completed_transport.product,
+                completed_transport.quantity,
+            )
+            completed_deliveries.append(
+                CompletedDelivery(
+                    ship_id=ship.ship_id,
+                    ship_name=ship.model.display_name,
+                    product=completed_transport.product,
+                    quantity=completed_transport.quantity,
+                )
+            )
+
         self.current_market_trend = next(self._market_trends)
 
-        return self.last_market_event
+        return RoundResult(
+            market_event=self.last_market_event,
+            completed_deliveries=tuple(completed_deliveries),
+        )

@@ -8,6 +8,7 @@ from galactic_trader.exceptions import GameException
 from galactic_trader.production import PRODUCTION_RECIPES
 from galactic_trader.products import Product
 from galactic_trader.ships import get_ship_models
+from galactic_trader.transport import TransportOption
 
 
 @dataclass(frozen=True)
@@ -42,9 +43,9 @@ class TerminalUI:
             raise ValueError("Expected 'help ships'.")
 
         if command == "my":
-                    if len(parts) == 2 and parts[1].lower() == "ships":
-                        return ParsedCommand(action="my_ships")
-                    raise ValueError("Expected 'my ships'.")
+            if len(parts) == 2 and parts[1].lower() == "ships":
+                return ParsedCommand(action="my_ships")
+            raise ValueError("Expected 'my ships'.")
 
         if command == "buy" and len(parts) >= 2 and parts[1].lower() == "ship":
             if len(parts) != 3:
@@ -92,6 +93,36 @@ class TerminalUI:
             raise ValueError("Amount must be greater than zero.")
 
         return ParsedCommand(action=command, product=product, amount=amount)
+
+    def select_transport_ship(self, options: tuple[TransportOption, ...]) -> int | None:
+        """Displays transport options and ask for a ship ID or cancellation."""
+        if not options:
+            return None
+
+        print("\nAVAILABLE SPACESHIPS:")
+        available_ids = {option.ship_id for option in options}
+        for option in options:
+            round_label = "round" if option.travel_rounds == 1 else "rounds"
+            print(
+                f"- #{option.ship_id}: {option.ship_name} "
+                f"| Capacity: {option.cargo_capacity} "
+                f"| Expected travel time: "
+                f"{option.travel_rounds} {round_label}"
+            )
+
+        while True:
+            selection = input("Ship ID or 'c' to cancel: ").strip().lower()
+            if selection == "c":
+                return None
+            try:
+                ship_id = int(selection)
+            except ValueError:
+                print("[!] Ship ID must be a whole number or 'c'.")
+                continue
+            if ship_id not in available_ids:
+                print("[!] Select one of the displayed spaceship IDs.")
+                continue
+            return ship_id
 
     def render(self) -> None:
         """Visualizes the Engine state."""
@@ -170,12 +201,22 @@ class TerminalUI:
 
         for owned_ship in self.engine.fleet.ships:
             model = owned_ship.model
+            if owned_ship.active_transport is None:
+                status = "Available"
+            else:
+                mission = owned_ship.active_transport
+                status = (
+                    f"In transit: {mission.quantity} {mission.product}, "
+                    f"{mission.remaining_rounds}/{mission.total_rounds} "
+                    "rounds remaining"
+                )
             print(
                 f"- {owned_ship} "
                 f"| Cargo: {model.cargo_type} "
                 f"| Capacity: {model.cargo_capacity} "
                 f"| Speed: {model.speed_rating} "
                 f"| Defense: {model.defense_rating}"
+                f"| Status: {status}"
             )
 
     def run(self) -> None:
@@ -191,12 +232,14 @@ class TerminalUI:
                     print("Exiting...")
                     break
                 if cmd.action == "n":
-                    event = self.engine.tick()
+                    result = self.engine.tick()
                     print("\n[NEXT] Next Round started.")
-                    if event is None:
+                    if result.market_event is None:
                         print("[EVENT] No market event this round.")
                     else:
-                        print(f"[EVENT] {event.message}")
+                        print(f"[EVENT] {result.market_event.message}")
+                    for delivery in result.completed_deliveries:
+                        print(f"[DELIVERY] {delivery.message}")
                     continue
                 if cmd.action == "help_ships":
                     self.render_ship_models()
@@ -218,10 +261,36 @@ class TerminalUI:
                 assert cmd.product is not None
 
                 if cmd.action == "b":
-                    action, price = self.engine.interact_with_market(
-                        is_buy=True, product=cmd.product, quantity=cmd.amount
+                    options = self.engine.get_transport_options(
+                        cmd.product,
+                        cmd.amount,
                     )
-                    print(f"\n[SUCCESS] {action} {cmd.amount} units @ {price:.2f}\n")
+                    if not options:
+                        print(
+                            f"\n[!] No available spaceship can transport "
+                            f"{cmd.amount} {cmd.product}. "
+                            "Purchase cancelled.\n"
+                        )
+                        continue
+
+                    ship_id = self.select_transport_ship(options)
+                    if ship_id is None:
+                        print("\n[!] Purchase cancelled.\n")
+                        continue
+
+                    purchase = self.engine.buy_product(
+                        cmd.product,
+                        cmd.amount,
+                        ship_id,
+                    )
+                    print(
+                        f"\n[SUCCESS] Bought {purchase.quantity} "
+                        f"{purchase.product} @ "
+                        f"{purchase.unit_price:.2f} Credits.\n"
+                        f"[TRANSPORT] {purchase.ship_name} "
+                        f"(ID: #{purchase.ship_id}) returns in "
+                        f"{purchase.travel_rounds} round(s).\n"
+                    )
                 elif cmd.action == "s":
                     action, price = self.engine.interact_with_market(
                         is_buy=False, product=cmd.product, quantity=cmd.amount
@@ -236,5 +305,4 @@ class TerminalUI:
             except ValueError as e:
                 print(f"\n[!] Invalid input format: {e}")
             except GameException as e:
-                # Catching the logic errors from the Engine
                 print(f"\n[!] TRANSACTION FAILED: {e}\n")

@@ -13,47 +13,53 @@ from galactic_trader.products import Product
 
 @dataclass
 class Inventory:
-    """Each player has one inventory"""
+    """Manages the player's credits and products currently in the stock."""
 
     money: float
     stock: dict[Product, int] = field(default_factory=dict)
 
-    def execute_trade(self, product: Product, quantity: int, unit_price: float) -> None:
-        """
-        Unified method for Buying AND Selling.
-        - Positive quantity = BUY (Money down, Stock up)
-        - Negative quantity = SELL (Money up, Stock down)
-        """
-        assert quantity != 0
-        assert unit_price > 0
+    def pay(self, amount: float) -> None:
+        """Deducts a positive amount after checking the available credits."""
+        if amount <= 0:
+            raise ValueError("Payment amount must be greater than zero.")
+        if self.money < amount:
+            raise NotEnoughMoneyException(
+                f"Need {amount:.2f} Credits, have {self.money:.2f} Credits."
+            )
+        self.money = round(self.money - amount, 2)
 
-        cost = quantity * unit_price
+    def credit(self, amount: float) -> None:
+        """Adds a positive amount to the player's credits."""
+        if amount <= 0:
+            raise ValueError("Credit amount must be greater than zero.")
+        self.money = round(self.money + amount, 2)
 
-        # 1. Validation Logic
-        if quantity > 0:  # BUYING
-            if self.money < cost:
-                raise NotEnoughMoneyException(
-                    f"Need {cost:.2f} Credits, have {self.money:.2f} Credits"
-                )
+    def execute_sale(
+        self,
+        product: Product,
+        quantity: int,
+        unit_price: float,
+    ) -> None:
+        """Executes an immediate stock sale."""
+        if quantity == 0:
+            raise ValueError("Trade quantity must not be zero.")
+        if unit_price <= 0:
+            raise ValueError("Unit price must be greater than zero.")
 
-        elif quantity < 0:  # SELLING
-            # check current stock. absolute value needed because quantity is negative
-            current_stock = self.stock.get(product, 0)
-            if current_stock < abs(quantity):
-                raise NotEnoughStockException(f"Not enough {product} to sell.")
+        current_stock = self.stock.get(product, 0)
+        if current_stock < quantity:
+            raise NotEnoughStockException(f"Not enough {product} to sell.")
 
-        # 2. Execution Logic (Only runs if Validation passes)
-        self.money -= cost
-        self.adjust_stock(product, quantity)
+        total = round(quantity * unit_price, 2)
+        self.adjust_stock(product, -quantity)
+        self.credit(total)
 
     def execute_production(
         self, product: Product, quantity: int, recipe: ProductionRecipe
     ) -> float:
-        """
-        Executes the production of given product.
-        Removes the required materials and production cost and adds the produced products at given quantity
-        """
-        assert quantity > 0
+        """Consumes materials and credits and adds the produced products."""
+        if quantity <= 0:
+            raise ValueError("Quantity must be greater than zero.")
 
         total_cost = recipe.calculate_total_cost(quantity)
         required_materials = recipe.calculate_required_materials(quantity)
@@ -76,11 +82,9 @@ class Inventory:
             raise NotEnoughMaterialsException(f"Missing materials: {missing_display}.")
 
         # only change inventory values after checks have passed
-        self.money -= total_cost
-
+        self.pay(total_cost)
         for material, required_amount in required_materials.items():
             self.stock[material] -= required_amount
-
         self.adjust_stock(product, quantity)
 
         return total_cost

@@ -27,3 +27,15 @@ class UnknownShipModelException(GameException):
 
 class ShipNotOwnedException(GameException):
     """Report that the player does not own the requested spaceship."""
+
+
+class ShipInTransitException(GameException):
+    """Report that a spaceship is already performing a transport."""
+
+
+class IncompatibleCargoException(GameException):
+    """Report that a spaceship cannot carry the requested cargo type."""
+
+
+class NotEnoughCargoCapacityException(GameException):
+    """Report that a spaceship cannot hold the requested quantity."""

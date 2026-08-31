@@ -1,6 +1,7 @@
 """Spaceship model definitions and their market registry."""
 
 from dataclasses import dataclass
+from math import ceil
 from typing import Final
 
 from galactic_trader.cargo import CargoType
@@ -31,17 +32,21 @@ class ShipModel:
         if not isinstance(self.cargo_type, CargoType):
             raise TypeError("Cargo type must be an instance of CargoType.")
         if self.cargo_capacity <= 0:
-            raise ValueError("Cargo capacity must be greater than zero.")
-        if not 0 <= self.speed_rating <= 100:
-            raise ValueError("Speed rating must be between zero and one hundred.")
+            raise ValueError("Cargo capacity must be greater than 0.")
+        if not 0 < self.speed_rating <= 100:
+            raise ValueError("Speed rating must be higher than 0 and lower or equal 100.")
         if not 0 <= self.defense_rating <= 100:
-            raise ValueError("Defense rating must be between zero and one hundred.")
+            raise ValueError("Defense rating must be between 0 and 100.")
         if self.purchase_price <= 0:
-            raise ValueError("Purchase price must be greater than zero.")
+            raise ValueError("Purchase price must be greater than 0.")
 
     def can_transport(self, product: Product) -> bool:
         """Return whether this model can transport a product."""
         return self.cargo_type is product.cargo_type
+
+    def calculate_travel_rounds(self, product: Product) -> int:
+        """Return the rounded-up duration of a collection round trip."""
+        return max(1, ceil((2 * product.distance) / self.speed_rating))
 
     def __str__(self) -> str:
         """Return the user-facing spaceship model name."""
