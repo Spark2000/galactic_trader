@@ -65,6 +65,11 @@ class Fleet:
         """Returns all owned ships without exposing the mutable internal list."""
         return tuple(self._ships)
 
+    @property
+    def next_ship_id(self) -> int:
+        """Return the ID that will be assigned to the next purchased ship."""
+        return self._next_ship_id
+
     def add_ship(self, model: ShipModel) -> OwnedShip:
         """Creates and store one independently identifiable spaceship."""
         owned_ship = OwnedShip(
@@ -74,6 +79,31 @@ class Fleet:
         self._ships.append(owned_ship)
         self._next_ship_id += 1
         return owned_ship
+
+    def restore_ship(
+        self,
+        *,
+        ship_id: int,
+        model: ShipModel,
+        active_transport: TransportMission | None = None,
+    ) -> OwnedShip:
+        """Restores one saved ship while preserving its original ID."""
+        if any(ship.ship_id == ship_id for ship in self._ships):
+            raise ValueError(f"Ship ID {ship_id} occurs more than once.")
+
+        owned_ship = OwnedShip(ship_id=ship_id, model=model)
+        if active_transport is not None:
+            owned_ship.start_transport(active_transport)
+        self._ships.append(owned_ship)
+        self._next_ship_id = max(self._next_ship_id, ship_id + 1)
+        return owned_ship
+
+    def restore_next_ship_id(self, next_ship_id: int) -> None:
+        """Restore the next ID so IDs of sold ships are never reused."""
+        highest_ship_id = max((ship.ship_id for ship in self._ships), default=0)
+        if next_ship_id <= highest_ship_id:
+            raise ValueError("Next ship ID must be greater than every owned ship ID.")
+        self._next_ship_id = next_ship_id
 
     def get_ship(self, ship_id: int) -> OwnedShip:
         """Returns the owned spaceship with the requested ID."""

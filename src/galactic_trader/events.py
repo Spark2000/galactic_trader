@@ -44,6 +44,7 @@ class MarketEvent:
     def apply(
         self, markets: dict[Product, Market], random_gen: Random
     ) -> EventOccurrence:
+        """Apply this event to its markets and return the occurrence."""
         percentage = random_gen.uniform(self.min_percentage, self.max_percentage)
         signed_percentage = self.direction * percentage
 

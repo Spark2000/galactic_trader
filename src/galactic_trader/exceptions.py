@@ -47,3 +47,19 @@ class UnknownInvestmentException(GameException):
 
 class InvestmentAlreadyOwnedException(GameException):
     """Report that an investment has already been purchased."""
+
+
+class SaveGameException(GameException):
+    """Base class for errors while saving or loading a game."""
+
+
+class InvalidSaveGameException(SaveGameException):
+    """Report malformed or inconsistent save-game data."""
+
+
+class UnsupportedSaveVersionException(SaveGameException):
+    """Report a save game whose schema version is not supported."""
+
+
+class SaveGameNotFoundException(SaveGameException):
+    """Report that the requested save game does not exist."""

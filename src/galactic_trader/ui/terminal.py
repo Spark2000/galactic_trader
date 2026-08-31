@@ -1,13 +1,24 @@
 """Terminal-based user interface for Galactic Trader."""
 
 from dataclasses import dataclass
+from pathlib import Path
 
 from galactic_trader.cargo import CargoType
 from galactic_trader.engine import EconomyEngine
-from galactic_trader.exceptions import GameException, UnknownInvestmentException
+from galactic_trader.exceptions import (
+    GameException,
+    SaveGameException,
+    UnknownInvestmentException,
+)
 from galactic_trader.investments import Investment, get_investment
 from galactic_trader.production import PRODUCTION_RECIPES
 from galactic_trader.products import Product
+from galactic_trader.savegame import (
+    DEFAULT_SAVE_DIRECTORY,
+    list_save_games,
+    load_game,
+    save_game,
+)
 from galactic_trader.ships import get_ship_models
 from galactic_trader.transport import TransportOption
 
@@ -22,14 +33,18 @@ class ParsedCommand:
     ship_model_id: str | None = None
     ship_id: int | None = None
     investment: Investment | None = None
+    save_name: str | None = None
 
 
 class TerminalUI:
     """Parses terminal commands and renders the current game state."""
 
-    def __init__(self, engine: EconomyEngine) -> None:
+    def __init__(
+        self, engine: EconomyEngine, *, save_directory: Path = DEFAULT_SAVE_DIRECTORY
+    ) -> None:
         """Initializes the terminal interface."""
         self.engine = engine
+        self.save_directory = Path(save_directory)
 
     def parse_command(self, raw_input: str) -> ParsedCommand:
         """Parse and validate one terminal command."""
@@ -41,12 +56,28 @@ class TerminalUI:
 
         if command == "help":
             if len(parts) != 2:
-                raise ValueError("Expected 'help ships' or 'help investments'.")
+                raise ValueError(
+                    "Expected 'help ships', 'help investments' or 'help saves'."
+                )
             if parts[1].lower() == "ships":
                 return ParsedCommand(action="help_ships")
             if parts[1].lower() == "investments":
                 return ParsedCommand(action="help_investments")
-            raise ValueError("Expected 'help ships' or 'help investments'.")
+            if parts[1].lower() == "saves":
+                return ParsedCommand(action="help_saves")
+            raise ValueError(
+                "Expected 'help ships', 'help investments' or 'help saves'."
+            )
+
+        if command == "save":
+            if len(parts) != 1:
+                raise ValueError("Command 'save' takes no arguments.")
+            return ParsedCommand(action="save")
+
+        if command == "load":
+            if len(parts) != 2:
+                raise ValueError("Expected 'load <save_name>'.")
+            return ParsedCommand(action="load", save_name=parts[1])
 
         if command == "my":
             if len(parts) == 2 and parts[1].lower() == "ships":
@@ -141,6 +172,8 @@ class TerminalUI:
     def render(self) -> None:
         """Visualizes the Engine state."""
         print("-" * 40)
+        print(f"ROUND: {self.engine.round_number}")
+        print("-" * 40)
         self.render_products()
         print("-" * 40)
         self.render_production_recipes()
@@ -169,6 +202,9 @@ class TerminalUI:
             "  - investment catalog: 'help investments'\n"
             "- Other:\n"
             "  - next round: 'n'\n"
+            "  - save game: 'save'\n"
+            "  - saved games: 'help saves'\n"
+            "  - load game: 'load <save_name>'\n"
             "  - quit: 'q'"
         )
 
@@ -194,13 +230,8 @@ class TerminalUI:
             if effective_cost == recipe.cost:
                 cost_display = f"{effective_cost:.2f} Credits"
             else:
-                cost_display = (
-                    f"{effective_cost:.2f} Credits "
-                    f"(Base: {recipe.cost:.2f})"
-                )
-            print(
-                f"- {product}: {cost_display} | Materials: {materials_display}"
-            )
+                cost_display = f"{effective_cost:.2f} Credits (Base: {recipe.cost:.2f})"
+            print(f"- {product}: {cost_display} | Materials: {materials_display}")
 
     def render_ship_models(self) -> None:
         """Displays all spaceship models grouped by supported cargo type."""
@@ -240,6 +271,17 @@ class TerminalUI:
                 f"| Effect: {investment.description} "
                 f"| Status: {status}"
             )
+
+    def render_save_games(self) -> None:
+        """Display every save name that can be loaded."""
+        print("SAVE GAMES:")
+        save_paths = list_save_games(self.save_directory)
+        if not save_paths:
+            print("- No save games found.")
+            return
+
+        for save_path in save_paths:
+            print(f"- {save_path.stem}")
 
     def render_owned_ships(self) -> None:
         """Displays every spaceship currently owned by the player."""
@@ -299,6 +341,24 @@ class TerminalUI:
                 if cmd.action == "help_investments":
                     self.render_investments()
                     continue
+                if cmd.action == "help_saves":
+                    self.render_save_games()
+                    continue
+                if cmd.action == "save":
+                    save_path = save_game(
+                        self.engine,
+                        self.save_directory,
+                    )
+                    print(f"\n[SAVED] Game saved as '{save_path.stem}'.\n")
+                    continue
+                if cmd.action == "load":
+                    assert cmd.save_name is not None
+                    self.engine = load_game(
+                        cmd.save_name,
+                        self.save_directory,
+                    )
+                    print(f"\n[LOADED] Game '{cmd.save_name}' loaded.\n")
+                    continue
                 if cmd.action == "my_ships":
                     self.render_owned_ships()
                     continue
@@ -314,13 +374,8 @@ class TerminalUI:
                     continue
                 if cmd.action == "buy_investment":
                     assert cmd.investment is not None
-                    investment, price = self.engine.buy_investment(
-                        cmd.investment
-                    )
-                    print(
-                        f"\n[SUCCESS] Bought {investment} "
-                        f"for {price:.2f} Credits.\n"
-                    )
+                    investment, price = self.engine.buy_investment(cmd.investment)
+                    print(f"\n[SUCCESS] Bought {investment} for {price:.2f} Credits.\n")
                     continue
 
                 assert cmd.product is not None
@@ -374,5 +429,7 @@ class TerminalUI:
 
             except ValueError as e:
                 print(f"\n[!] Invalid input format: {e}")
+            except SaveGameException as e:
+                print(f"\n[!] SAVE/LOAD FAILED: {e}\n")
             except GameException as e:
                 print(f"\n[!] TRANSACTION FAILED: {e}\n")

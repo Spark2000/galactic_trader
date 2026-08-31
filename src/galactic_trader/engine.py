@@ -1,8 +1,6 @@
 """Coordinates markets, player actions, transports and round progression."""
 
-from collections.abc import Iterator
 from dataclasses import dataclass
-from itertools import cycle
 from random import Random
 from typing import Final
 
@@ -45,6 +43,7 @@ from galactic_trader.transport import (
 TREND_MULTIPLIER_MIN: Final[float] = 0.90
 TREND_MULTIPLIER_MAX: Final[float] = 1.10
 SHIP_RESALE_RATE: Final[float] = 0.70
+MARKET_TRENDS: Final[tuple[float, ...]] = (0.2, 0.2, -0.1, -0.3)
 
 
 @dataclass(frozen=True)
@@ -73,6 +72,7 @@ class EconomyEngine:
             raise ValueError("Pirate attack probability must be between zero and one.")
 
         self._random = Random(random_seed)
+        self.round_number = 1
 
         self.player = Inventory(money=100.0)
         self.fleet = Fleet()
@@ -85,8 +85,8 @@ class EconomyEngine:
             )
             for product in Product
         }
-        self._market_trends: Iterator[float] = cycle([0.2, 0.2, -0.1, -0.3])
-        self.current_market_trend = next(self._market_trends)
+        self._market_trend_index = 0
+        self.current_market_trend = MARKET_TRENDS[self._market_trend_index]
         self.last_trend_multiplier = 1.0
         self.last_effective_market_trend = self.current_market_trend
 
@@ -99,6 +99,33 @@ class EconomyEngine:
         self.last_market_event: EventOccurrence | None = None
         self.pirate_attack_probability = pirate_attack_probability
         self.last_pirate_attack: PirateAttackOccurrence | None = None
+
+    @property
+    def market_trend_index(self) -> int:
+        """Returns the position of the trend used by the next round."""
+        return self._market_trend_index
+
+    def restore_round_state(
+        self,
+        *,
+        round_number: int,
+        market_trend_index: int,
+        last_trend_multiplier: float,
+        last_effective_market_trend: float,
+    ) -> None:
+        """Restores validated round and trend values from a save game."""
+        if round_number <= 0:
+            raise ValueError("Round number must be greater than zero.")
+        if not 0 <= market_trend_index < len(MARKET_TRENDS):
+            raise ValueError("Market trend index is outside the trend sequence.")
+        if last_trend_multiplier <= 0:
+            raise ValueError("Last trend multiplier must be greater than zero.")
+
+        self.round_number = round_number
+        self._market_trend_index = market_trend_index
+        self.current_market_trend = MARKET_TRENDS[market_trend_index]
+        self.last_trend_multiplier = last_trend_multiplier
+        self.last_effective_market_trend = last_effective_market_trend
 
     def get_transport_options(
         self, product: Product, quantity: int
@@ -346,7 +373,9 @@ class EconomyEngine:
                 )
             )
 
-        self.current_market_trend = next(self._market_trends)
+        self._market_trend_index = (self._market_trend_index + 1) % len(MARKET_TRENDS)
+        self.current_market_trend = MARKET_TRENDS[self._market_trend_index]
+        self.round_number += 1
 
         return RoundResult(
             market_event=self.last_market_event,
