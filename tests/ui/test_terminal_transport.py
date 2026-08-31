@@ -109,7 +109,7 @@ def test_run_starts_transport_and_displays_delivery(
     assert "AVAILABLE SPACESHIPS:" in output
     assert "Expected travel time: 1 round" in output
     assert "Bought 2 Wood" in output
-    assert "In transit: 2 Wood" in output
+    assert "In transit from Endor: 2 Wood" in output
     assert "[DELIVERY] 2 Wood arrived with Comet Courier (ID: #1)" in output
     assert terminal.engine.player.stock[Product.WOOD] == 2
     assert terminal.engine.fleet.get_ship(1).is_available

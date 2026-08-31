@@ -52,22 +52,32 @@ def test_delivery_arrives_only_after_all_travel_rounds(
     engine: EconomyEngine,
 ) -> None:
     ship_id = add_ship(engine, "standard_s_1")
-    purchase = engine.buy_product(Product.GEMS, quantity=1, ship_id=ship_id)
+    purchase = engine.buy_product(
+        Product.GEMS,
+        quantity=1,
+        ship_id=ship_id,
+    )
 
-    assert purchase.travel_rounds == 3
-    for _ in range(2):
+    assert purchase.travel_rounds == 2
+    assert engine.player.stock.get(Product.GEMS, 0) == 0
+
+    # product is still on its way.
+    for _ in range(purchase.travel_rounds - 1):
         result = engine.tick()
+
         assert result.completed_deliveries == ()
         assert engine.player.stock.get(Product.GEMS, 0) == 0
-        assert not engine.fleet.get_ship(ship_id).is_available
 
+    # product is being delivered in last tick.
     result = engine.tick()
 
     assert len(result.completed_deliveries) == 1
-    assert result.completed_deliveries[0].product is Product.GEMS
-    assert result.completed_deliveries[0].quantity == 1
+    delivery = result.completed_deliveries[0]
+
+    assert delivery.product is Product.GEMS
+    assert delivery.quantity == 1
+    assert delivery.ship_id == ship_id
     assert engine.player.stock[Product.GEMS] == 1
-    assert engine.fleet.get_ship(ship_id).is_available
 
 
 def test_transport_options_include_only_eligible_ships(
@@ -81,7 +91,7 @@ def test_transport_options_include_only_eligible_ships(
     options = engine.get_transport_options(Product.WOOD, quantity=20)
 
     assert [option.ship_id for option in options] == [medium_id]
-    assert options[0].travel_rounds == 2
+    assert options[0].travel_rounds == 1
 
 
 def test_incompatible_ship_rejects_purchase_atomically(

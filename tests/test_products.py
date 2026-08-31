@@ -3,6 +3,7 @@
 import pytest
 
 from galactic_trader.cargo import CargoType
+from galactic_trader.planets import Planet
 from galactic_trader.products import Product, ProductInfo
 
 
@@ -13,7 +14,7 @@ from galactic_trader.products import Product, ProductInfo
         ("starting_price", 0.5, ValueError),
         ("starting_volatility", -1.0, ValueError),
         ("cargo_type", "standard", TypeError),
-        ("distance", 0, ValueError),
+        ("planet", "Endor", TypeError),
     ],
 )
 def test_product_info_rejects_invalid_values(
@@ -26,7 +27,7 @@ def test_product_info_rejects_invalid_values(
         "starting_price": 10.0,
         "starting_volatility": 0.5,
         "cargo_type": CargoType.STANDARD,
-        "distance": 40,
+        "planet": Planet.ENDOR,
     }
     values[field_name] = invalid_value
 
@@ -43,6 +44,3 @@ def test_product_exposes_its_information() -> None:
 
 def test_product_string_uses_display_name() -> None:
     assert str(Product.FURNITURE) == Product.FURNITURE.display_name
-
-def test_every_product_has_a_positive_distance() -> None:
-    assert all(product.distance > 0 for product in Product)

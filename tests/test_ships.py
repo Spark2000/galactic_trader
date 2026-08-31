@@ -4,6 +4,7 @@ import pytest
 
 from galactic_trader.cargo import CargoType
 from galactic_trader.exceptions import UnknownShipModelException
+from galactic_trader.planets import Planet
 from galactic_trader.products import Product
 from galactic_trader.ships import (
     ShipModel,
@@ -79,7 +80,10 @@ def test_ship_model_rejects_invalid_values(
 def test_calculate_travel_rounds_uses_round_trip_and_rounds_up() -> None:
     model = get_ship_model("standard_s_1")
 
-    assert Product.WOOD.distance == 45
-    assert model.speed_rating == 90
-    assert model.calculate_travel_rounds(Product.WOOD) == 1
-    assert model.calculate_travel_rounds(Product.GEMS) == 3
+    assert Product.WOOD.planet is Planet.ENDOR
+    assert Product.WOOD.planet.distance == 10
+    assert Product.GEMS.planet is Planet.KESSEL
+    assert Product.GEMS.planet.distance == 60
+
+    assert model.calculate_travel_rounds_to(Planet.ENDOR) == 1
+    assert model.calculate_travel_rounds_to(Planet.KESSEL) == 2
