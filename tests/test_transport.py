@@ -36,7 +36,7 @@ def test_completed_transport_cannot_advance_again() -> None:
 @pytest.mark.parametrize(
     ("quantity", "total_rounds", "remaining_rounds"),
     [
-        (0, 1, 1),
+        (-1, 1, 1),
         (1, 0, 1),
         (1, 2, 0),
         (1, 2, 3),

@@ -28,8 +28,8 @@ class TransportMission:
         """Validates the initial mission state."""
         if self.quantity <= 0:
             raise ValueError("Transport quantity must be greater than 0.")
-        if self.total_rounds <= 0:
-            raise ValueError("Total travel rounds must be greater than 0.")
+        if self.total_rounds < 0:
+            raise ValueError("Total travel rounds must be greater or equal to 0.")
         if not 0 < self.remaining_rounds <= self.total_rounds:
             raise ValueError(
                 "Remaining rounds must be between 1 and total rounds."
