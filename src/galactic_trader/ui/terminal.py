@@ -240,6 +240,8 @@ class TerminalUI:
                         print("[EVENT] No market event this round.")
                     else:
                         print(f"[EVENT] {result.market_event.message}")
+                    if result.pirate_attack is not None:
+                        print(f"[PIRATES] {result.pirate_attack.message}")
                     for delivery in result.completed_deliveries:
                         print(f"[DELIVERY] {delivery.message}")
                     continue

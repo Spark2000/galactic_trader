@@ -25,7 +25,7 @@ class TransportMission:
     remaining_rounds: int
 
     def __post_init__(self) -> None:
-        """Validate the initial mission state."""
+        """Validates the initial mission state."""
         if self.quantity <= 0:
             raise ValueError("Transport quantity must be greater than 0.")
         if self.total_rounds <= 0:
@@ -35,8 +35,17 @@ class TransportMission:
                 "Remaining rounds must be between 1 and total rounds."
             )
 
+    def remove_cargo(self, quantity: int) -> int:
+        """Removes cargo and returns the quantity actually removed."""
+        if quantity <= 0:
+            raise ValueError("Removed cargo quantity must be greater than zero.")
+
+        removed_quantity = min(quantity, self.quantity)
+        self.quantity -= removed_quantity
+        return removed_quantity
+
     def advance(self) -> bool:
-        """Advance the mission and return whether it has been completed."""
+        """Advances the mission and returns whether it has been completed."""
         if self.remaining_rounds <= 0:
             raise RuntimeError("A completed transport cannot advance again.")
 
@@ -46,7 +55,7 @@ class TransportMission:
 
 @dataclass(frozen=True)
 class ProductPurchase:
-    """Describe a completed purchase and its newly started transport."""
+    """Describes a completed purchase and its newly started transport."""
 
     product: Product
     quantity: int
@@ -59,16 +68,30 @@ class ProductPurchase:
 
 @dataclass(frozen=True)
 class CompletedDelivery:
-    """Describe products delivered by one spaceship during a tick."""
+    """Describes products delivered by one spaceship during a tick."""
 
     ship_id: int
     ship_name: str
     product: Product
     quantity: int
 
+    def __post_init__(self) -> None:
+        """Validates delivery data while permitting an empty return."""
+        if self.ship_id <= 0:
+            raise ValueError("Ship ID must be greater than zero.")
+        if not self.ship_name.strip():
+            raise ValueError("Ship name must not be empty.")
+        if self.quantity < 0:
+            raise ValueError("Delivery quantity must not be negative.")
+
     @property
     def message(self) -> str:
-        """Return a player-friendly delivery message."""
+        """Returns a player-firendly delivery or empty-return message."""
+        if self.quantity == 0:
+            return (
+                f"{self.ship_name} (ID: #{self.ship_id}) "
+                "returned without cargo."
+            )
         return (
             f"{self.quantity} {self.product} arrived with "
             f"{self.ship_name} (ID: #{self.ship_id})."

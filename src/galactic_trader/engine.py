@@ -11,6 +11,11 @@ from galactic_trader.events import (
     EventOccurrence,
     choose_market_event,
 )
+from galactic_trader.events_transport import (
+    DEFAULT_PIRATE_ATTACK_PROBABILITY,
+    PirateAttackOccurrence,
+    resolve_pirate_attack,
+)
 from galactic_trader.exceptions import (
     IncompatibleCargoException,
     NotEnoughCargoCapacityException,
@@ -42,6 +47,7 @@ class RoundResult:
 
     market_event: EventOccurrence | None
     completed_deliveries: tuple[CompletedDelivery, ...]
+    pirate_attack: PirateAttackOccurrence | None = None
 
 
 class EconomyEngine:
@@ -52,10 +58,13 @@ class EconomyEngine:
         *,
         random_seed: int | None = None,
         event_probability: float = DEFAULT_EVENT_PROBABILITY,
+        pirate_attack_probability: float = DEFAULT_PIRATE_ATTACK_PROBABILITY,
     ) -> None:
         """Initializes engine state."""
         if not 0 <= event_probability <= 1:
             raise ValueError("Event probability must be between zero and one.")
+        if not 0 <= pirate_attack_probability <= 1:
+            raise ValueError("Pirate attack probability must be between zero and one.")
 
         self._random = Random(random_seed)
 
@@ -81,6 +90,8 @@ class EconomyEngine:
 
         self.event_probability = event_probability
         self.last_market_event: EventOccurrence | None = None
+        self.pirate_attack_probability = pirate_attack_probability
+        self.last_pirate_attack: PirateAttackOccurrence | None = None
 
     def get_transport_options(
         self, product: Product, quantity: int
@@ -264,6 +275,12 @@ class EconomyEngine:
         else:
             self.last_market_event = selected_event.apply(self.markets, self._random)
 
+        self.last_pirate_attack = resolve_pirate_attack(
+            fleet=self.fleet,
+            random_generator=self._random,
+            probability=self.pirate_attack_probability,
+        )
+        
         completed_deliveries: list[CompletedDelivery] = []
         for ship in self.fleet.ships:
             completed_transport = ship.advance_transport()
@@ -288,4 +305,5 @@ class EconomyEngine:
         return RoundResult(
             market_event=self.last_market_event,
             completed_deliveries=tuple(completed_deliveries),
+            pirate_attack=self.last_pirate_attack,
         )
