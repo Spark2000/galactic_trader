@@ -130,6 +130,7 @@ class EconomyEngine:
             (
                 "BUY_SHIP",
                 str(purchased_ship),
+                1,
                 purchase_price,
             )
         )
@@ -149,6 +150,7 @@ class EconomyEngine:
             (
                 "SELL_SHIP",
                 str(owned_ship),
+                1,
                 sale_price,
             )
         )
