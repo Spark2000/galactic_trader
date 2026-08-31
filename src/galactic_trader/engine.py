@@ -10,14 +10,17 @@ from galactic_trader.events import (
     EventOccurrence,
     choose_market_event,
 )
-from galactic_trader.exceptions import NotProducibleException
+from galactic_trader.exceptions import NotEnoughMoneyException, NotProducibleException
+from galactic_trader.fleet import Fleet, OwnedShip
 from galactic_trader.inventory import Inventory
 from galactic_trader.market import Market
 from galactic_trader.production import PRODUCTION_RECIPES
 from galactic_trader.products import Product
+from galactic_trader.ships import get_ship_model
 
 TREND_MULTIPLIER_MIN: Final[float] = 0.90
 TREND_MULTIPLIER_MAX: Final[float] = 1.10
+SHIP_RESALE_RATE: Final[float] = 0.70
 
 
 class EconomyEngine:
@@ -36,6 +39,7 @@ class EconomyEngine:
         self._random = Random(random_seed)
 
         self.player = Inventory(money=100.0)
+        self.fleet = Fleet()
         self.markets: dict[Product, Market] = {
             product: Market(
                 product=product,
@@ -108,6 +112,47 @@ class EconomyEngine:
         self.history.append((action_name, str(product), quantity, total_cost))
 
         return action_name, total_cost
+
+    def buy_ship(self, model_id: str) -> tuple[OwnedShip, float]:
+        """Buy one spaceship and return it with its purchase price."""
+        model = get_ship_model(model_id)
+        purchase_price = model.purchase_price
+
+        if self.player.money < purchase_price:
+            raise NotEnoughMoneyException(
+                f"Need {purchase_price:.2f} Credits, "
+                f"have {self.player.money:.2f} Credits."
+            )
+
+        self.player.money -= purchase_price
+        purchased_ship = self.fleet.add_ship(model)
+        self.history.append(
+            (
+                "BUY_SHIP",
+                str(purchased_ship),
+                purchase_price,
+            )
+        )
+        return purchased_ship, purchase_price
+
+    def sell_ship(self, ship_id: int) -> tuple[OwnedShip, float]:
+        """Sell one owned spaceship for a fixed share of its purchase price."""
+        owned_ship = self.fleet.get_ship(ship_id)
+        sale_price = round(
+            owned_ship.model.purchase_price * SHIP_RESALE_RATE,
+            2,
+        )
+
+        self.fleet.remove_ship(ship_id)
+        self.player.money += sale_price
+        self.history.append(
+            (
+                "SELL_SHIP",
+                str(owned_ship),
+                sale_price,
+            )
+        )
+        return owned_ship, sale_price
 
     def tick(self) -> EventOccurrence | None:
         """Advances the simulation by one round and applies all pending price changes."""

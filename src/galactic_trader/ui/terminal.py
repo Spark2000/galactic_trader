@@ -1,11 +1,24 @@
 """Terminal-based user interface for Galactic Trader."""
 
+from dataclasses import dataclass
+
 from galactic_trader.cargo import CargoType
 from galactic_trader.engine import EconomyEngine
 from galactic_trader.exceptions import GameException
 from galactic_trader.production import PRODUCTION_RECIPES
 from galactic_trader.products import Product
 from galactic_trader.ships import get_ship_models
+
+
+@dataclass(frozen=True)
+class ParsedCommand:
+    """Represent one validated terminal command."""
+
+    action: str
+    product: Product | None = None
+    amount: int = 0
+    ship_model_id: str | None = None
+    ship_id: int | None = None
 
 
 class TerminalUI:
@@ -15,10 +28,9 @@ class TerminalUI:
         """Initializes the terminal interface."""
         self.engine = engine
 
-    def parse_command(self, raw_input: str) -> tuple[str, Product | None, int]:
-        """Parses '<command> <product> <amount>' into its components. Handles errors internally."""
+    def parse_command(self, raw_input: str) -> ParsedCommand:
+        """Parse and validate one terminal command."""
         parts = raw_input.split()
-
         if not parts:
             raise ValueError("Input cannot be empty.")
 
@@ -26,13 +38,34 @@ class TerminalUI:
 
         if command == "help":
             if len(parts) == 2 and parts[1].lower() == "ships":
-                return "help_ships", None, 0
+                return ParsedCommand(action="help_ships")
             raise ValueError("Expected 'help ships'.")
+
+        if command == "my":
+                    if len(parts) == 2 and parts[1].lower() == "ships":
+                        return ParsedCommand(action="my_ships")
+                    raise ValueError("Expected 'my ships'.")
+
+        if command == "buy" and len(parts) >= 2 and parts[1].lower() == "ship":
+            if len(parts) != 3:
+                raise ValueError("Expected 'buy ship <model_id>'.")
+            return ParsedCommand(action="buy_ship", ship_model_id=parts[2].lower())
+
+        if command == "sell" and len(parts) >= 2 and parts[1].lower() == "ship":
+            if len(parts) != 3:
+                raise ValueError("Expected 'sell ship <ship_id>'.")
+            try:
+                ship_id = int(parts[2])
+            except ValueError:
+                raise ValueError("Ship ID must be a whole number.") from None
+            if ship_id <= 0:
+                raise ValueError("Ship ID must be greater than zero.")
+            return ParsedCommand(action="sell_ship", ship_id=ship_id)
 
         if command in {"n", "q"}:
             if len(parts) != 1:
                 raise ValueError(f"Command '{command}' takes no arguments.")
-            return command, None, 0
+            return ParsedCommand(action=command)
 
         if command not in {"b", "s", "p"}:
             raise ValueError(f"Command '{command}' is unknown.")
@@ -58,7 +91,7 @@ class TerminalUI:
         if amount <= 0:
             raise ValueError("Amount must be greater than zero.")
 
-        return command, product, amount
+        return ParsedCommand(action=command, product=product, amount=amount)
 
     def render(self) -> None:
         """Visualizes the Engine state."""
@@ -77,11 +110,18 @@ class TerminalUI:
         print("-" * 40)
         print(
             "COMMANDS:\n"
-            "- buy: 'b <product> <amount>',\n"
-            "- sell: 's <product> <amount>'\n"
-            "- next round: 'n'"
-            "- quit: 'q'"
-            "- ship infos: 'help ships'"
+            "- Products:\n"
+            "  - buy: 'b <product> <amount>'\n"
+            "  - sell: 's <product> <amount>'\n"
+            "  - produce: 'p <product> <amount>'\n"
+            "- Spaceship:\n"
+            "  - buy: 'buy ship <model_id>'\n"
+            "  - sell: 'sell ship <ship_id>'\n"
+            "  - owned spaceships: 'my ships'\n"
+            "  - spaceship catalog: 'help ships'\n"
+            "- Other:\n"
+            "  - next round: 'n'\n"
+            "  - quit: 'q'"
         )
 
     def render_products(self) -> None:
@@ -114,26 +154,43 @@ class TerminalUI:
 
             for model in get_ship_models(cargo_type):
                 print(
-                    f"- {model.display_name} "
+                    f"- [{model.model_id}] {model.display_name} "
                     f"| Capacity: {model.cargo_capacity} "
                     f"| Speed: {model.speed_rating} "
                     f"| Defense: {model.defense_rating} "
                     f"| Price: {model.purchase_price:.2f} Credits"
                 )
 
+    def render_owned_ships(self) -> None:
+        """Display every spaceship currently owned by the player."""
+        print("YOUR SPACESHIPS:")
+        if not self.engine.fleet.ships:
+            print("- No spaceships owned.")
+            return
+
+        for owned_ship in self.engine.fleet.ships:
+            model = owned_ship.model
+            print(
+                f"- {owned_ship} "
+                f"| Cargo: {model.cargo_type} "
+                f"| Capacity: {model.cargo_capacity} "
+                f"| Speed: {model.speed_rating} "
+                f"| Defense: {model.defense_rating}"
+            )
+
     def run(self) -> None:
-        """Game loop for terminal ui."""
+        """Run the terminal input loop until the user quits."""
         while True:
             self.render()
             user_input = input(">> ").strip().lower()
 
             try:
-                cmd, product, amount = self.parse_command(user_input)
+                cmd = self.parse_command(user_input)
 
-                if cmd == "q":
+                if cmd.action == "q":
                     print("Exiting...")
                     break
-                if cmd == "n":
+                if cmd.action == "n":
                     event = self.engine.tick()
                     print("\n[NEXT] Next Round started.")
                     if event is None:
@@ -141,27 +198,40 @@ class TerminalUI:
                     else:
                         print(f"[EVENT] {event.message}")
                     continue
-                if cmd == "help_ships":
+                if cmd.action == "help_ships":
                     self.render_ship_models()
                     continue
+                if cmd.action == "my_ships":
+                    self.render_owned_ships()
+                    continue
+                if cmd.action == "buy_ship":
+                    assert cmd.ship_model_id is not None
+                    owned_ship, price = self.engine.buy_ship(cmd.ship_model_id)
+                    print(f"\n[SUCCESS] Bought {owned_ship} for {price:.2f} Credits.\n")
+                    continue
+                if cmd.action == "sell_ship":
+                    assert cmd.ship_id is not None
+                    owned_ship, price = self.engine.sell_ship(cmd.ship_id)
+                    print(f"\n[SUCCESS] Sold {owned_ship} for {price:.2f} Credits.\n")
+                    continue
 
-                assert product is not None
+                assert cmd.product is not None
 
-                if cmd == "b":
+                if cmd.action == "b":
                     action, price = self.engine.interact_with_market(
-                        is_buy=True, product=product, quantity=amount
+                        is_buy=True, product=cmd.product, quantity=cmd.amount
                     )
-                    print(f"\n[SUCCESS] {action} {amount} units @ {price:.2f}\n")
-                elif cmd == "s":
+                    print(f"\n[SUCCESS] {action} {cmd.amount} units @ {price:.2f}\n")
+                elif cmd.action == "s":
                     action, price = self.engine.interact_with_market(
-                        is_buy=False, product=product, quantity=amount
+                        is_buy=False, product=cmd.product, quantity=cmd.amount
                     )
-                    print(f"\n[SUCCESS] {action} {amount} units @ {price:.2f}\n")
-                elif cmd == "p":
+                    print(f"\n[SUCCESS] {action} {cmd.amount} units @ {price:.2f}\n")
+                elif cmd.action == "p":
                     action, price = self.engine.produce_product(
-                        product=product, quantity=amount
+                        product=cmd.product, quantity=cmd.amount
                     )
-                    print(f"\n[SUCCESS] {action} {amount} units @ {price:.2f}\n")
+                    print(f"\n[SUCCESS] {action} {cmd.amount} units @ {price:.2f}\n")
 
             except ValueError as e:
                 print(f"\n[!] Invalid input format: {e}")
