@@ -5,7 +5,7 @@ import pytest
 from galactic_trader.engine import EconomyEngine
 from galactic_trader.production import PRODUCTION_RECIPES
 from galactic_trader.products import Product
-from galactic_trader.ui.terminal import TerminalUI
+from galactic_trader.ui.terminal import TerminalUI, ParsedCommand
 
 
 @pytest.fixture
@@ -16,37 +16,37 @@ def terminal_ui() -> TerminalUI:
 def test_parse_command_buy(terminal_ui: TerminalUI) -> None:
     result = terminal_ui.parse_command("b food 5")
 
-    assert result == ("b", Product.FOOD, 5)
+    assert result == ParsedCommand(action="b", product=Product.FOOD, amount=5)
 
 
 def test_parse_command_sell(terminal_ui: TerminalUI) -> None:
     result = terminal_ui.parse_command("s wood 1")
 
-    assert result == ("s", Product.WOOD, 1)
+    assert result == ParsedCommand(action="s", product=Product.WOOD, amount=1)
 
 
 def test_parse_command_next(terminal_ui: TerminalUI) -> None:
     result = terminal_ui.parse_command("n")
 
-    assert result == ("n", None, 0)
+    assert result == ParsedCommand(action="n")
 
 
 def test_parse_command_quit(terminal_ui: TerminalUI) -> None:
     result = terminal_ui.parse_command("q")
 
-    assert result == ("q", None, 0)
+    assert result == ParsedCommand(action="q")
 
 
 def test_parse_command_produce(terminal_ui: TerminalUI) -> None:
     result = terminal_ui.parse_command("p furniture 2")
 
-    assert result == ("p", Product.FURNITURE, 2)
+    assert result == ParsedCommand(action="p", product=Product.FURNITURE, amount=2)
 
 
 def test_parse_command_buy_with_default_amount(terminal_ui: TerminalUI) -> None:
     result = terminal_ui.parse_command("b food")
 
-    assert result == ("b", Product.FOOD, 1)
+    assert result == ParsedCommand(action="b", product=Product.FOOD, amount=1)
 
 
 @pytest.mark.parametrize(
