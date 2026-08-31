@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Final
 
 from galactic_trader.cargo import CargoType
+from galactic_trader.exceptions import UnknownShipModelException
 from galactic_trader.products import Product
 
 
@@ -11,6 +12,7 @@ from galactic_trader.products import Product
 class ShipModel:
     """Describe the fixed properties of a purchasable spaceship model."""
 
+    model_id: str
     display_name: str
     cargo_type: CargoType
     cargo_capacity: int
@@ -20,6 +22,10 @@ class ShipModel:
 
     def __post_init__(self) -> None:
         """Validate the spaceship model values."""
+        if not self.model_id.isidentifier() or self.model_id != self.model_id.lower():
+            raise ValueError(
+                "Model ID must be a lowercase identifier, for example 'atlas_runner'."
+            )
         if not self.display_name.strip():
             raise ValueError("Display name must not be empty.")
         if not isinstance(self.cargo_type, CargoType):
@@ -45,6 +51,7 @@ class ShipModel:
 SHIP_MODELS: Final[tuple[ShipModel, ...]] = (
     # standard
     ShipModel(
+        model_id="standard_s_1",
         display_name="Comet Courier",
         cargo_type=CargoType.STANDARD,
         cargo_capacity=10,
@@ -53,6 +60,7 @@ SHIP_MODELS: Final[tuple[ShipModel, ...]] = (
         purchase_price=80.0,
     ),
     ShipModel(
+        model_id="standard_m_1",
         display_name="Comet Freighter",
         cargo_type=CargoType.STANDARD,
         cargo_capacity=30,
@@ -61,6 +69,7 @@ SHIP_MODELS: Final[tuple[ShipModel, ...]] = (
         purchase_price=300.0,
     ),
     ShipModel(
+        model_id="standard_l_1",
         display_name="Comet Hauler",
         cargo_type=CargoType.STANDARD,
         cargo_capacity=70,
@@ -70,6 +79,7 @@ SHIP_MODELS: Final[tuple[ShipModel, ...]] = (
     ),
     # liquid
     ShipModel(
+        model_id="liquid_s_1",
         display_name="Orca Courier",
         cargo_type=CargoType.LIQUID,
         cargo_capacity=8,
@@ -78,6 +88,7 @@ SHIP_MODELS: Final[tuple[ShipModel, ...]] = (
         purchase_price=110.0,
     ),
     ShipModel(
+        model_id="liquid_m_1",
         display_name="Orca Freighter",
         cargo_type=CargoType.LIQUID,
         cargo_capacity=24,
@@ -86,6 +97,7 @@ SHIP_MODELS: Final[tuple[ShipModel, ...]] = (
         purchase_price=390.0,
     ),
     ShipModel(
+        model_id="liquid_l_1",
         display_name="Orca Hauler",
         cargo_type=CargoType.LIQUID,
         cargo_capacity=56,
@@ -95,6 +107,7 @@ SHIP_MODELS: Final[tuple[ShipModel, ...]] = (
     ),
     # refrigerated
     ShipModel(
+        model_id="refrigerated_s_1",
         display_name="Polar Courier",
         cargo_type=CargoType.REFRIGERATED,
         cargo_capacity=8,
@@ -103,6 +116,7 @@ SHIP_MODELS: Final[tuple[ShipModel, ...]] = (
         purchase_price=130.0,
     ),
     ShipModel(
+        model_id="refrigerated_m_1",
         display_name="Polar Freighter",
         cargo_type=CargoType.REFRIGERATED,
         cargo_capacity=22,
@@ -111,6 +125,7 @@ SHIP_MODELS: Final[tuple[ShipModel, ...]] = (
         purchase_price=450.0,
     ),
     ShipModel(
+        model_id="refrigerated_l_1",
         display_name="Polar Hauler",
         cargo_type=CargoType.REFRIGERATED,
         cargo_capacity=52,
@@ -118,8 +133,9 @@ SHIP_MODELS: Final[tuple[ShipModel, ...]] = (
         defense_rating=82,
         purchase_price=1280.0,
     ),
-    # hazardous-cargo
+    # hazardous
     ShipModel(
+        model_id="hazardous_s_1",
         display_name="Nebula Courier",
         cargo_type=CargoType.HAZARDOUS,
         cargo_capacity=6,
@@ -128,6 +144,7 @@ SHIP_MODELS: Final[tuple[ShipModel, ...]] = (
         purchase_price=180.0,
     ),
     ShipModel(
+        model_id="hazardous_m_1",
         display_name="Nebula Freighter",
         cargo_type=CargoType.HAZARDOUS,
         cargo_capacity=18,
@@ -136,6 +153,7 @@ SHIP_MODELS: Final[tuple[ShipModel, ...]] = (
         purchase_price=620.0,
     ),
     ShipModel(
+        model_id="hazardous_l_1",
         display_name="Nebula Hauler",
         cargo_type=CargoType.HAZARDOUS,
         cargo_capacity=42,
@@ -145,6 +163,7 @@ SHIP_MODELS: Final[tuple[ShipModel, ...]] = (
     ),
     # specialized models:
     ShipModel(
+        model_id="atlas_runner",
         display_name="Atlas Runner",
         cargo_type=CargoType.REFRIGERATED,
         cargo_capacity=12,
@@ -153,6 +172,7 @@ SHIP_MODELS: Final[tuple[ShipModel, ...]] = (
         purchase_price=950.0,
     ),
     ShipModel(
+        model_id="leviathan_tanker",
         display_name="Leviathan Tanker",
         cargo_type=CargoType.LIQUID,
         cargo_capacity=100,
@@ -161,6 +181,7 @@ SHIP_MODELS: Final[tuple[ShipModel, ...]] = (
         purchase_price=2000.0,
     ),
     ShipModel(
+        model_id="titan_carrier",
         display_name="Titan Carrier",
         cargo_type=CargoType.HAZARDOUS,
         cargo_capacity=100,
@@ -169,6 +190,20 @@ SHIP_MODELS: Final[tuple[ShipModel, ...]] = (
         purchase_price=2200.0,
     ),
 )
+
+
+def get_ship_model(model_id: str) -> ShipModel:
+    """Return the spaceship model with the requested model ID."""
+    normalized_id = model_id.strip().lower()
+
+    for model in SHIP_MODELS:
+        if model.model_id == normalized_id:
+            return model
+
+    available_ids = ", ".join(model.model_id for model in SHIP_MODELS)
+    raise UnknownShipModelException(
+        f"Unknown spaceship model '{model_id}'. Available model IDs: {available_ids}."
+    )
 
 
 def get_ship_models(cargo_type: CargoType) -> tuple[ShipModel, ...]:

@@ -19,3 +19,7 @@ class NotEnoughMaterialsException(NotEnoughStockException):
 
 class NotProducibleException(GameException):
     """Report that no production recipe exists for a product."""
+
+
+class UnknownShipModelException(GameException):
+    """Report that no spaceship model has the requested model ID."""
